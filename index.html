@@ -1,129 +1,242 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector de Lenguaje Inapropiado</title>
+    <title>Detector de Lenguaje Inapropiado - Estilo WhatsApp</title>
     <style>
-        /* Estilos generales para simular el ambiente de Teams */
+        /* 1. ESTILOS GENERALES Y FONDO DE CHAT (WHATSAPP) */
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fuente típica de Microsoft */
-            background-color: #f3f2f1; /* Fondo claro de la aplicación */
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f3f2f1; /* Fondo de la aplicación */
             margin: 0;
-            padding: 20px;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Contenedor principal del chat, con el fondo clásico de WA */
+        .chat-container {
+            width: 100%;
+            max-width: 650px;
+            height: 85vh; /* Altura de la pantalla del chat */
+            background-color: #e5ddd5;
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><circle cx="50" cy="50" r="45" fill="none" stroke="%23999" stroke-width="1" /></svg>'); /* Patrón de fondo sutil */
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
-            align-items: center;
-        }
-
-        /* Contenedor principal para centrar el "chat" */
-        .chat-container {
-            background-color: #ffffff; /* Fondo del área de chat */
             border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra sutil */
-            padding: 20px;
-            width: 90%;
-            max-width: 600px; /* Ancho máximo como un panel de chat */
+            overflow: hidden;
         }
 
-        /* Encabezado */
-        h2 {
-            color: #6264a7; /* Púrpura de Teams para el título */
-            border-bottom: 2px solid #e0e0e0;
-            padding-bottom: 10px;
-            margin-top: 0;
+        /* 2. ENCABEZADO Y AREA DE MENSAJES */
+        .header {
+            background-color: #6264a7; /* Púrpura de Teams */
+            color: white;
+            padding: 15px;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
         }
 
-        /* Área de texto (input de chat) */
-        #texto {
-            width: calc(100% - 20px); /* Ajustar al ancho del contenedor */
+        .messages-area {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto; /* Scroll para los mensajes */
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* 3. ESTILO DE LAS BURBUJAS DE MENSAJE */
+        .message-bubble {
+            margin-bottom: 10px;
+            max-width: 80%;
+            padding: 8px 12px;
+            border-radius: 8px;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        /* Burbuja del Usuario (Derecha) */
+        .message-user {
+            align-self: flex-end; /* Alinear a la derecha */
+            background-color: #dcf8c6; /* Color claro de mensaje WA enviado */
+            color: #1a1a1a;
+            border-bottom-right-radius: 0; /* Quitar la esquina para la "cola" */
+        }
+
+        /* Burbuja del Bot (Izquierda) */
+        .message-bot {
+            align-self: flex-start; /* Alinear a la izquierda */
+            background-color: #ffffff; /* Color de mensaje WA recibido */
+            color: #1a1a1a;
+            border-bottom-left-radius: 0; /* Quitar la esquina para la "cola" */
+            box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
+        }
+
+        /* 4. AREA DE INPUT Y BOTÓN (Parte inferior, como WhatsApp) */
+        .input-area {
+            display: flex;
             padding: 10px;
-            margin-bottom: 15px;
+            background-color: #f0f0f0;
+            border-top: 1px solid #ddd;
+        }
+
+        #texto {
+            flex-grow: 1;
+            padding: 10px 15px;
+            border-radius: 20px; /* Bordes redondeados del input de chat */
             border: 1px solid #ccc;
-            border-radius: 4px;
-            box-sizing: border-box; /* Incluir padding en el ancho total */
-            resize: vertical; /* Permitir redimensionar solo verticalmente */
-            min-height: 100px;
-            font-size: 14px;
+            margin-right: 10px;
+            resize: none;
+            min-height: 20px;
+            max-height: 100px;
+        }
+
+        .send-button {
+            background-color: #6264a7; /* Púrpura de Teams */
+            color: white;
+            border: none;
+            border-radius: 50%; /* Botón redondo */
+            width: 45px;
+            height: 45px;
+            min-width: 45px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        .send-button:hover {
+            background-color: #55578f;
         }
         
-        /* Botón de Analizar (Enviar) */
-        button {
-            background-color: #6264a7; /* Púrpura principal de Teams */
-            color: white;
-            padding: 10px 15px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            transition: background-color 0.3s ease;
-            width: 100%; /* Botón de ancho completo */
+        /* 5. ESTILO DE RESULTADO (Resultado del Bot) */
+        .result-text {
+            font-size: 14px;
+            font-weight: normal;
+            margin-top: 5px;
         }
-
-        button:hover {
-            background-color: #55578f; /* Un púrpura más oscuro al pasar el ratón */
-        }
-
-        /* Estilo del resultado (mensaje) */
-        #resultado {
-            margin-top: 20px;
-            padding: 10px 15px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            word-break: break-word; /* Para asegurar que el texto largo se ajuste */
-        }
-
+        
         /* Estilo para el resultado de NO inapropiado (éxito) */
         .sin-inapropiado {
-            background-color: #e6f7e9; /* Fondo verde claro */
             color: #217346; /* Texto verde oscuro */
-            border-left: 5px solid #217346;
+            font-weight: 600;
         }
 
         /* Estilo para el resultado de SÍ inapropiado (advertencia) */
         .con-inapropiado {
-            background-color: #fff4ce; /* Fondo amarillo claro */
             color: #8a6d3b; /* Texto amarillo/naranja oscuro */
-            border-left: 5px solid #8a6d3b;
+            font-weight: 600;
         }
-
+        
     </style>
 </head>
 <body>
+
     <div class="chat-container">
-        <h2>Detector de lenguaje inapropiado</h2>
+        <div class="header">
+            Detector de Lenguaje Inapropiado
+        </div>
 
-        <textarea id="texto" rows="10" cols="50" placeholder="Pega el texto aquí..."></textarea>
+        <div class="messages-area" id="messages-area">
+            <div class="message-bubble message-bot">
+                Hola. Escribe o pega el texto que deseas analizar a continuación.
+            </div>
+            </div>
 
-        <button onclick="analizar()">Analizar</button>
-
-        <p id="resultado" class=""></p>
+        <div class="input-area">
+            <textarea id="texto" placeholder="Escribe un mensaje..." rows="1"></textarea>
+            <button class="send-button" onclick="handleSend()">▶</button>
+        </div>
     </div>
 
     <script>
         const malasPalabras = ["tonto", "idiota", "estupido", "groseria1", "groseria2"];
+        const messagesArea = document.getElementById("messages-area");
+        const textoInput = document.getElementById("texto");
 
-        function analizar() {
-            const resultadoElement = document.getElementById("resultado");
-            const texto = document.getElementById("texto").value.toLowerCase();
+        // Función auxiliar para crear una nueva burbuja de mensaje
+        function createMessageBubble(text, type, resultClass = '') {
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble ' + (type === 'user' ? 'message-user' : 'message-bot');
+            
+            // Si es la respuesta del bot, separamos el resultado del texto analizado
+            if (type === 'bot') {
+                bubble.innerHTML = `
+                    <p style="margin: 0;">*Texto Analizado:*</p>
+                    <p style="margin: 0; color: #555; font-style: italic; border-left: 2px solid #ccc; padding-left: 5px;">
+                        "${text}"
+                    </p>
+                    <p class="result-text ${resultClass}" style="margin-bottom: 0;">
+                        ${resultClass === 'con-inapropiado' ? '⚠ Lenguaje inapropiado detectado' : '✅ Sin lenguaje inapropiado'}
+                    </p>
+                `;
+            } else {
+                // Mensaje del usuario solo tiene el texto
+                 bubble.innerHTML = <p style="margin: 0;">${text}</p>;
+            }
+            
+            messagesArea.appendChild(bubble);
+            // Hacer scroll hasta el fondo para ver el mensaje nuevo
+            messagesArea.scrollTop = messagesArea.scrollHeight;
+        }
+        
+        // Función principal para el análisis
+        function analizar(textoOriginal) {
+            const texto = textoOriginal.toLowerCase();
             const encontrados = malasPalabras.filter(p => texto.includes(p));
 
+            let resultClass;
+            let resultText;
+
             if (encontrados.length > 0) {
-                // Si hay lenguaje inapropiado
-                resultadoElement.innerHTML = 
-                  "⚠ Lenguaje inapropiado detectado: " + encontrados.join(", ");
-                // Añadir clase de advertencia y remover la de éxito
-                resultadoElement.classList.add("con-inapropiado");
-                resultadoElement.classList.remove("sin-inapropiado");
+                resultClass = "con-inapropiado";
+                resultText = "⚠ Lenguaje inapropiado detectado: " + encontrados.join(", ");
             } else {
-                // Si NO hay lenguaje inapropiado
-                resultadoElement.innerHTML = 
-                  "✅ Sin lenguaje inapropiado.";
-                // Añadir clase de éxito y remover la de advertencia
-                resultadoElement.classList.add("sin-inapropiado");
-                resultadoElement.classList.remove("con-inapropiado");
+                resultClass = "sin-inapropiado";
+                resultText = "✅ Sin lenguaje inapropiado.";
             }
+
+            // Muestra la respuesta del bot
+            createMessageBubble(textoOriginal, 'bot', resultClass);
         }
+
+        // Manejador del botón/envío
+        function handleSend() {
+            const texto = textoInput.value.trim();
+
+            if (texto === "") {
+                return; // No hacer nada si el campo está vacío
+            }
+
+            // 1. Mostrar el mensaje del usuario (a la derecha)
+            createMessageBubble(texto, 'user');
+            
+            // 2. Ejecutar el análisis y mostrar la respuesta del bot (a la izquierda)
+            analizar(texto);
+
+            // 3. Limpiar el input para el siguiente mensaje
+            textoInput.value = '';
+            // Ajustar la altura del textarea al contenido (para la funcionalidad de auto-resize)
+            textoInput.style.height = 'auto'; 
+        }
+        
+        // Extra: Permitir enviar con Enter y auto-ajustar la altura del textarea
+        textoInput.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault(); // Evita un salto de línea en el textarea
+                handleSend();
+            }
+        });
+        
+        textoInput.addEventListener('input', function() {
+            this.style.height = 'auto'; // Resetear la altura
+            this.style.height = (this.scrollHeight) + 'px'; // Ajustar a la altura del contenido
+        });
+        
     </script>
 </body>
 </html>
