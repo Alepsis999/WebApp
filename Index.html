@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Detector de Lenguaje Inapropiado</title>
+</head>
+<body>
+    <h2>Detector de lenguaje inapropiado</h2>
+
+    <textarea id="texto" rows="10" cols="50" placeholder="Pega el texto aquí..."></textarea><br><br>
+
+    <button onclick="analizar()">Analizar</button>
+
+    <p id="resultado"></p>
+
+    <script>
+        const malasPalabras = ["tonto", "idiota", "estupido", "groseria1", "groseria2"];
+
+        function analizar() {
+            const texto = document.getElementById("texto").value.toLowerCase();
+            const encontrados = malasPalabras.filter(p => texto.includes(p));
+
+            if (encontrados.length > 0) {
+                document.getElementById("resultado").innerHTML = 
+                  "⚠ Lenguaje inapropiado detectado: " + encontrados.join(", ");
+            } else {
+                document.getElementById("resultado").innerHTML = 
+                  " Sin lenguaje inapropiado.";
+            }
+        }
+    </script>
+</body>
+</html>
