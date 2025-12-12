@@ -2,29 +2,126 @@
 <html>
 <head>
     <title>Detector de Lenguaje Inapropiado</title>
+    <style>
+        /* Estilos generales para simular el ambiente de Teams */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Fuente típica de Microsoft */
+            background-color: #f3f2f1; /* Fondo claro de la aplicación */
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Contenedor principal para centrar el "chat" */
+        .chat-container {
+            background-color: #ffffff; /* Fondo del área de chat */
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Sombra sutil */
+            padding: 20px;
+            width: 90%;
+            max-width: 600px; /* Ancho máximo como un panel de chat */
+        }
+
+        /* Encabezado */
+        h2 {
+            color: #6264a7; /* Púrpura de Teams para el título */
+            border-bottom: 2px solid #e0e0e0;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+
+        /* Área de texto (input de chat) */
+        #texto {
+            width: calc(100% - 20px); /* Ajustar al ancho del contenedor */
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box; /* Incluir padding en el ancho total */
+            resize: vertical; /* Permitir redimensionar solo verticalmente */
+            min-height: 100px;
+            font-size: 14px;
+        }
+        
+        /* Botón de Analizar (Enviar) */
+        button {
+            background-color: #6264a7; /* Púrpura principal de Teams */
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: background-color 0.3s ease;
+            width: 100%; /* Botón de ancho completo */
+        }
+
+        button:hover {
+            background-color: #55578f; /* Un púrpura más oscuro al pasar el ratón */
+        }
+
+        /* Estilo del resultado (mensaje) */
+        #resultado {
+            margin-top: 20px;
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            word-break: break-word; /* Para asegurar que el texto largo se ajuste */
+        }
+
+        /* Estilo para el resultado de NO inapropiado (éxito) */
+        .sin-inapropiado {
+            background-color: #e6f7e9; /* Fondo verde claro */
+            color: #217346; /* Texto verde oscuro */
+            border-left: 5px solid #217346;
+        }
+
+        /* Estilo para el resultado de SÍ inapropiado (advertencia) */
+        .con-inapropiado {
+            background-color: #fff4ce; /* Fondo amarillo claro */
+            color: #8a6d3b; /* Texto amarillo/naranja oscuro */
+            border-left: 5px solid #8a6d3b;
+        }
+
+    </style>
 </head>
 <body>
-    <h2>Detector de lenguaje inapropiado</h2>
+    <div class="chat-container">
+        <h2>Detector de lenguaje inapropiado</h2>
 
-    <textarea id="texto" rows="10" cols="50" placeholder="Pega el texto aquí..."></textarea><br><br>
+        <textarea id="texto" rows="10" cols="50" placeholder="Pega el texto aquí..."></textarea>
 
-    <button onclick="analizar()">Analizar</button>
+        <button onclick="analizar()">Analizar</button>
 
-    <p id="resultado"></p>
+        <p id="resultado" class=""></p>
+    </div>
 
     <script>
         const malasPalabras = ["tonto", "idiota", "estupido", "groseria1", "groseria2"];
 
         function analizar() {
+            const resultadoElement = document.getElementById("resultado");
             const texto = document.getElementById("texto").value.toLowerCase();
             const encontrados = malasPalabras.filter(p => texto.includes(p));
 
             if (encontrados.length > 0) {
-                document.getElementById("resultado").innerHTML = 
+                // Si hay lenguaje inapropiado
+                resultadoElement.innerHTML = 
                   "⚠ Lenguaje inapropiado detectado: " + encontrados.join(", ");
+                // Añadir clase de advertencia y remover la de éxito
+                resultadoElement.classList.add("con-inapropiado");
+                resultadoElement.classList.remove("sin-inapropiado");
             } else {
-                document.getElementById("resultado").innerHTML = 
-                  " Sin lenguaje inapropiado.";
+                // Si NO hay lenguaje inapropiado
+                resultadoElement.innerHTML = 
+                  "✅ Sin lenguaje inapropiado.";
+                // Añadir clase de éxito y remover la de advertencia
+                resultadoElement.classList.add("sin-inapropiado");
+                resultadoElement.classList.remove("con-inapropiado");
             }
         }
     </script>
