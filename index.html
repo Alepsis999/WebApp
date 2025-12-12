@@ -3,10 +3,9 @@
 <head>
     <title>Detector de Lenguaje Inapropiado - Estilo WhatsApp</title>
     <style>
-        /* 1. ESTILOS GENERALES Y FONDO DE CHAT (WHATSAPP) */
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f2f1; /* Fondo de la aplicación */
+            background-color: #f3f2f1;
             margin: 0;
             padding: 0;
             display: flex;
@@ -15,13 +14,12 @@
             min-height: 100vh;
         }
 
-        /* Contenedor principal del chat, con el fondo clásico de WA */
         .chat-container {
             width: 100%;
             max-width: 650px;
-            height: 85vh; /* Altura de la pantalla del chat */
+            height: 85vh;
             background-color: #e5ddd5;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><circle cx="50" cy="50" r="45" fill="none" stroke="%23999" stroke-width="1" /></svg>'); /* Patrón de fondo sutil */
+            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><circle cx="50" cy="50" r="45" fill="none" stroke="%23999" stroke-width="1" /></svg>');
             box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
             display: flex;
             flex-direction: column;
@@ -29,9 +27,8 @@
             overflow: hidden;
         }
 
-        /* 2. ENCABEZADO Y AREA DE MENSAJES */
         .header {
-            background-color: #6264a7; /* Púrpura de Teams */
+            background-color: #6264a7;
             color: white;
             padding: 15px;
             font-size: 18px;
@@ -42,12 +39,11 @@
         .messages-area {
             flex-grow: 1;
             padding: 15px;
-            overflow-y: auto; /* Scroll para los mensajes */
+            overflow-y: auto;
             display: flex;
             flex-direction: column;
         }
 
-        /* 3. ESTILO DE LAS BURBUJAS DE MENSAJE */
         .message-bubble {
             margin-bottom: 10px;
             max-width: 80%;
@@ -57,24 +53,21 @@
             position: relative;
         }
 
-        /* Burbuja del Usuario (Derecha) */
         .message-user {
-            align-self: flex-end; /* Alinear a la derecha */
-            background-color: #dcf8c6; /* Color claro de mensaje WA enviado */
+            align-self: flex-end;
+            background-color: #dcf8c6;
             color: #1a1a1a;
-            border-bottom-right-radius: 0; /* Quitar la esquina para la "cola" */
+            border-bottom-right-radius: 0;
         }
 
-        /* Burbuja del Bot (Izquierda) */
         .message-bot {
-            align-self: flex-start; /* Alinear a la izquierda */
-            background-color: #ffffff; /* Color de mensaje WA recibido */
+            align-self: flex-start;
+            background-color: #ffffff;
             color: #1a1a1a;
-            border-bottom-left-radius: 0; /* Quitar la esquina para la "cola" */
+            border-bottom-left-radius: 0;
             box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
         }
 
-        /* 4. AREA DE INPUT Y BOTÓN (Parte inferior, como WhatsApp) */
         .input-area {
             display: flex;
             padding: 10px;
@@ -85,7 +78,7 @@
         #texto {
             flex-grow: 1;
             padding: 10px 15px;
-            border-radius: 20px; /* Bordes redondeados del input de chat */
+            border-radius: 20px;
             border: 1px solid #ccc;
             margin-right: 10px;
             resize: none;
@@ -94,10 +87,10 @@
         }
 
         .send-button {
-            background-color: #6264a7; /* Púrpura de Teams */
+            background-color: #6264a7;
             color: white;
             border: none;
-            border-radius: 50%; /* Botón redondo */
+            border-radius: 50%;
             width: 45px;
             height: 45px;
             min-width: 45px;
@@ -113,25 +106,21 @@
             background-color: #55578f;
         }
         
-        /* 5. ESTILO DE RESULTADO (Resultado del Bot) */
         .result-text {
             font-size: 14px;
             font-weight: normal;
             margin-top: 5px;
         }
         
-        /* Estilo para el resultado de NO inapropiado (éxito) */
         .sin-inapropiado {
-            color: #217346; /* Texto verde oscuro */
+            color: #217346;
             font-weight: 600;
         }
 
-        /* Estilo para el resultado de SÍ inapropiado (advertencia) */
         .con-inapropiado {
-            color: #8a6d3b; /* Texto amarillo/naranja oscuro */
+            color: #8a6d3b;
             font-weight: 600;
         }
-        
     </style>
 </head>
 <body>
@@ -145,11 +134,10 @@
             <div class="message-bubble message-bot">
                 Hola. Escribe o pega el texto que deseas analizar a continuación.
             </div>
-            </div>
+        </div>
 
         <div class="input-area">
             <textarea id="texto" placeholder="Escribe un mensaje..." rows="1"></textarea>
-            
             <button class="send-button" onclick="handleSend()">▶</button>
         </div>
     </div>
@@ -166,12 +154,10 @@
         const messagesArea = document.getElementById("messages-area");
         const textoInput = document.getElementById("texto");
 
-        // Función auxiliar para crear una nueva burbuja de mensaje
         function createMessageBubble(text, type, resultClass = '') {
             const bubble = document.createElement('div');
             bubble.className = 'message-bubble ' + (type === 'user' ? 'message-user' : 'message-bot');
             
-            // Si es la respuesta del bot, separamos el resultado del texto analizado
             if (type === 'bot') {
                 bubble.innerHTML = `
                     <p style="margin: 0;">**Texto Analizado:**</p>
@@ -183,68 +169,49 @@
                     </p>
                 `;
             } else {
-                // Mensaje del usuario solo tiene el texto
                  bubble.innerHTML = `<p style="margin: 0;">${text}</p>`;
             }
             
             messagesArea.appendChild(bubble);
-            // Hacer scroll hasta el fondo para ver el mensaje nuevo
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
         
-        // Función principal para el análisis
         function analizar(textoOriginal) {
             const texto = textoOriginal.toLowerCase();
             const encontrados = malasPalabras.filter(p => texto.includes(p));
 
             let resultClass;
-            let resultText; 
-
             if (encontrados.length > 0) {
                 resultClass = "con-inapropiado";
-                resultText = "⚠ Lenguaje inapropiado detectado: " + encontrados.join(", ");
             } else {
                 resultClass = "sin-inapropiado";
-                resultText = "✅ Sin lenguaje inapropiado.";
             }
 
-            // Muestra la respuesta del bot
             createMessageBubble(textoOriginal, 'bot', resultClass);
         }
 
-        // Manejador del botón/envío (handleSend)
         function handleSend() {
             const texto = textoInput.value.trim();
+            if (texto === "") return;
 
-            if (texto === "") {
-                return; // No hacer nada si el campo está vacío
-            }
-
-            // 1. Mostrar el mensaje del usuario (a la derecha)
             createMessageBubble(texto, 'user');
-            
-            // 2. Ejecutar el análisis y mostrar la respuesta del bot (a la izquierda)
             analizar(texto);
 
-            // 3. Limpiar el input para el siguiente mensaje
             textoInput.value = '';
-            // Ajustar la altura del textarea al contenido 
             textoInput.style.height = 'auto'; 
         }
         
-        // Extra: Permitir enviar con Enter y auto-ajustar la altura del textarea
         textoInput.addEventListener('keydown', function(event) {
             if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault(); // Evita un salto de línea en el textarea
+                event.preventDefault();
                 handleSend();
             }
         });
         
         textoInput.addEventListener('input', function() {
-            this.style.height = 'auto'; // Resetear la altura
-            this.style.height = (this.scrollHeight) + 'px'; // Ajustar a la altura del contenido
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
         });
-        
     </script>
 </body>
 </html>
