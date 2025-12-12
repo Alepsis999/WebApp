@@ -190,7 +190,7 @@
             const encontrados = malasPalabras.filter(p => texto.includes(p));
 
             let resultClass;
-            let resultText;
+            let resultText; // Esta variable no se usa directamente en esta versión, pero la mantenemos
 
             if (encontrados.length > 0) {
                 resultClass = "con-inapropiado";
@@ -216,6 +216,7 @@
             createMessageBubble(texto, 'user');
             
             // 2. Ejecutar el análisis y mostrar la respuesta del bot (a la izquierda)
+            // Se usa el texto original (sin toLowerCase) para la burbuja, pero el análisis se hace en minúsculas.
             analizar(texto);
 
             // 3. Limpiar el input para el siguiente mensaje
