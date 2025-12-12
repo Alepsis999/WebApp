@@ -149,6 +149,7 @@
 
         <div class="input-area">
             <textarea id="texto" placeholder="Escribe un mensaje..." rows="1"></textarea>
+            
             <button class="send-button" onclick="handleSend()">▶</button>
         </div>
     </div>
@@ -166,7 +167,7 @@
             // Si es la respuesta del bot, separamos el resultado del texto analizado
             if (type === 'bot') {
                 bubble.innerHTML = `
-                    <p style="margin: 0;">*Texto Analizado:*</p>
+                    <p style="margin: 0;">**Texto Analizado:**</p>
                     <p style="margin: 0; color: #555; font-style: italic; border-left: 2px solid #ccc; padding-left: 5px;">
                         "${text}"
                     </p>
@@ -176,7 +177,7 @@
                 `;
             } else {
                 // Mensaje del usuario solo tiene el texto
-                 bubble.innerHTML = <p style="margin: 0;">${text}</p>;
+                 bubble.innerHTML = `<p style="margin: 0;">${text}</p>`;
             }
             
             messagesArea.appendChild(bubble);
@@ -190,7 +191,7 @@
             const encontrados = malasPalabras.filter(p => texto.includes(p));
 
             let resultClass;
-            let resultText; // Esta variable no se usa directamente en esta versión, pero la mantenemos
+            let resultText; 
 
             if (encontrados.length > 0) {
                 resultClass = "con-inapropiado";
@@ -204,7 +205,7 @@
             createMessageBubble(textoOriginal, 'bot', resultClass);
         }
 
-        // Manejador del botón/envío
+        // Manejador del botón/envío (handleSend)
         function handleSend() {
             const texto = textoInput.value.trim();
 
@@ -216,12 +217,11 @@
             createMessageBubble(texto, 'user');
             
             // 2. Ejecutar el análisis y mostrar la respuesta del bot (a la izquierda)
-            // Se usa el texto original (sin toLowerCase) para la burbuja, pero el análisis se hace en minúsculas.
             analizar(texto);
 
             // 3. Limpiar el input para el siguiente mensaje
             textoInput.value = '';
-            // Ajustar la altura del textarea al contenido (para la funcionalidad de auto-resize)
+            // Ajustar la altura del textarea al contenido 
             textoInput.style.height = 'auto'; 
         }
         
