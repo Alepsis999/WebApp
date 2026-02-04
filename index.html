@@ -1,217 +1,169 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector de Lenguaje Inapropiado - Estilo WhatsApp</title>
+    <title>Detector de Jerga Mexicana con IA</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f2f1;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-        }
-
-        .chat-container {
-            width: 100%;
-            max-width: 650px;
-            height: 85vh;
-            background-color: #e5ddd5;
-            background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" opacity="0.1"><circle cx="50" cy="50" r="45" fill="none" stroke="%23999" stroke-width="1" /></svg>');
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            display: flex;
-            flex-direction: column;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .header {
-            background-color: #6264a7;
-            color: white;
-            padding: 15px;
-            font-size: 18px;
-            font-weight: 600;
-            text-align: center;
-        }
-
-        .messages-area {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-        }
-
-        .message-bubble {
-            margin-bottom: 10px;
-            max-width: 80%;
-            padding: 8px 12px;
-            border-radius: 8px;
-            line-height: 1.4;
-            position: relative;
-        }
-
-        .message-user {
-            align-self: flex-end;
-            background-color: #dcf8c6;
-            color: #1a1a1a;
-            border-bottom-right-radius: 0;
-        }
-
-        .message-bot {
-            align-self: flex-start;
-            background-color: #ffffff;
-            color: #1a1a1a;
-            border-bottom-left-radius: 0;
-            box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13);
-        }
-
-        .input-area {
-            display: flex;
-            padding: 10px;
-            background-color: #f0f0f0;
-            border-top: 1px solid #ddd;
-        }
-
-        #texto {
-            flex-grow: 1;
-            padding: 10px 15px;
-            border-radius: 20px;
-            border: 1px solid #ccc;
-            margin-right: 10px;
-            resize: none;
-            min-height: 20px;
-            max-height: 100px;
-        }
-
-        .send-button {
-            background-color: #6264a7;
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 45px;
-            height: 45px;
-            min-width: 45px;
-            font-size: 18px;
-            cursor: pointer;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: background-color 0.3s ease;
-        }
-
-        .send-button:hover {
-            background-color: #55578f;
-        }
-        
-        .result-text {
-            font-size: 14px;
-            font-weight: normal;
-            margin-top: 5px;
-        }
-        
-        .sin-inapropiado {
-            color: #217346;
-            font-weight: 600;
-        }
-
-        .con-inapropiado {
-            color: #8a6d3b;
-            font-weight: 600;
-        }
+        /* (MANTÉN TUS ESTILOS CSS ORIGINALES AQUÍ, NO LOS CAMBIÉ PARA AHORRAR ESPACIO) */
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f2f1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { width: 100%; max-width: 650px; height: 85vh; background-color: #e5ddd5; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+        .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; }
+        .messages-area { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+        .input-area { padding: 10px; background-color: #f0f0f0; display: flex; }
+        #texto { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; margin-right: 10px; }
+        .message-bubble { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; max-width: 80%; }
+        .message-user { align-self: flex-end; background-color: #dcf8c6; }
+        .message-bot { align-self: flex-start; background-color: #fff; }
+        .con-inapropiado { color: #d9534f; font-weight: bold; }
+        .sin-inapropiado { color: #217346; font-weight: bold; }
     </style>
 </head>
 <body>
 
     <div class="chat-container">
-        <div class="header">
-            Detector de Lenguaje Inapropiado
-        </div>
-
+        <div class="header">Detector de Jerga Mexicana (TensorFlow.js)</div>
         <div class="messages-area" id="messages-area">
             <div class="message-bubble message-bot">
-                Hola. Escribe o pega el texto que deseas analizar a continuación.
+                Inicializando red neuronal con jerga mexicana... espere un momento.
             </div>
         </div>
-
         <div class="input-area">
-            <textarea id="texto" placeholder="Escribe un mensaje..." rows="1"></textarea>
-            <button class="send-button" onclick="handleSend()">▶</button>
+            <textarea id="texto" placeholder="Entrenando IA..." disabled></textarea>
+            <button onclick="handleSend()">Enviar</button>
         </div>
     </div>
 
     <script>
-        const malasPalabras = [
-            "tonto", "idiota", "estupido", "puta", "puto", 
-            "pendejo", "mamon", "chinga tu madre", "cabron", "culero", 
-            "pinche", "verga", "ojete", "huevon", "puñetas", 
-            "baboso", "malparido", "mierda", "culo", "desgraciado", 
-            "lambiscon", "pelana", "pendejada", "chingadera", "tarado"
-        ];
-        
-        const messagesArea = document.getElementById("messages-area");
-        const textoInput = document.getElementById("texto");
+        let model;
+        let vocabulario = {}; // Diccionario para convertir palabras a números
+        const maxLongitud = 20; // Máximo de palabras por frase a analizar
 
-        function createMessageBubble(text, type, resultClass = '') {
-            const bubble = document.createElement('div');
-            bubble.className = 'message-bubble ' + (type === 'user' ? 'message-user' : 'message-bot');
+        // 1. DATASET DE ENTRENAMIENTO (Jerga Mexicana)
+        // 1 = Grosero, 0 = Limpio
+        const datosEntrenamiento = [
+            { text: "eres un pendejo", label: 1 },
+            { text: "vete a la verga", label: 1 },
+            { text: "chinga tu madre", label: 1 },
+            { text: "no mames guey", label: 1 },
+            { text: "pinche cabron", label: 1 },
+            { text: "que pedo puto", label: 1 },
+            { text: "hijo de tu puta madre", label: 1 },
+            { text: "vales verga", label: 1 },
+            { text: "no seas mamon", label: 1 },
+            { text: "estas bien idiota", label: 1 },
+            { text: "hola como estas", label: 0 },
+            { text: "buenos dias amigo", label: 0 },
+            { text: "muchas gracias", label: 0 },
+            { text: "el proyecto funciona bien", label: 0 },
+            { text: "vamos a comer", label: 0 },
+            { text: "que tengas buen dia", label: 0 },
+            { text: "microsoft teams es util", label: 0 },
+            { text: "estoy programando codigo", label: 0 }
+        ];
+
+        // 2. PREPROCESAMIENTO: "Bolsa de Palabras"
+        // Convertimos texto a números porque la IA solo entiende matemáticas
+        function procesarDatos() {
+            let palabrasUnicas = new Set();
             
-            if (type === 'bot') {
-                bubble.innerHTML = `
-                    <p style="margin: 0;">**Texto Analizado:**</p>
-                    <p style="margin: 0; color: #555; font-style: italic; border-left: 2px solid #ccc; padding-left: 5px;">
-                        "${text}"
-                    </p>
-                    <p class="result-text ${resultClass}" style="margin-bottom: 0;">
-                        ${resultClass === 'con-inapropiado' ? '⚠ Lenguaje inapropiado detectado' : '✅ Sin lenguaje inapropiado'}
-                    </p>
-                `;
+            // Extraer todas las palabras únicas del dataset
+            datosEntrenamiento.forEach(d => {
+                const palabras = d.text.toLowerCase().split(/\s+/);
+                palabras.forEach(p => palabrasUnicas.add(p));
+            });
+
+            // Crear diccionario (índice)
+            Array.from(palabrasUnicas).forEach((word, index) => {
+                vocabulario[word] = index + 1; // +1 para reservar 0 como "relleno"
+            });
+        }
+
+        function textoATensor(texto) {
+            const palabras = texto.toLowerCase().replace(/[^\w\s]/gi, '').split(/\s+/);
+            const secuencia = palabras.map(p => vocabulario[p] || 0); // 0 si la palabra no existe
+            
+            // Rellenar o cortar para que siempre tenga el mismo tamaño (padding)
+            while (secuencia.length < maxLongitud) secuencia.push(0);
+            return tf.tensor2d([secuencia.slice(0, maxLongitud)]);
+        }
+
+        // 3. CREAR Y ENTRENAR MODELO
+        async function entrenarModelo() {
+            procesarDatos();
+
+            // Preparar tensores (matrices matemáticas)
+            const inputs = datosEntrenamiento.map(d => {
+                const seq = d.text.toLowerCase().split(/\s+/).map(p => vocabulario[p] || 0);
+                while (seq.length < maxLongitud) seq.push(0);
+                return seq.slice(0, maxLongitud);
+            });
+            const labels = datosEntrenamiento.map(d => d.label);
+
+            const xs = tf.tensor2d(inputs);
+            const ys = tf.tensor2d(labels, [labels.length, 1]);
+
+            // Definir arquitectura de la Red Neuronal
+            model = tf.sequential();
+            // Capa de Entrada (Embedding simple)
+            model.add(tf.layers.dense({inputShape: [maxLongitud], units: 16, activation: 'relu'}));
+            model.add(tf.layers.dense({units: 8, activation: 'relu'}));
+            // Capa de Salida (1 neurona: 0 a 1)
+            model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
+
+            model.compile({optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy']});
+
+            // Entrenar
+            await model.fit(xs, ys, {epochs: 50}); 
+            
+            // UI Update
+            document.getElementById("texto").disabled = false;
+            document.getElementById("texto").placeholder = "Escribe algo...";
+            addMessage("¡IA Entrenada y lista para detectar jerga!", "bot");
+        }
+
+        // 4. LÓGICA DE INTERFAZ (UI)
+        const messagesArea = document.getElementById("messages-area");
+
+        function addMessage(text, sender, isToxic = false, score = 0) {
+            const div = document.createElement("div");
+            div.className = `message-bubble ${sender === "user" ? "message-user" : "message-bot"}`;
+            
+            if (sender === "bot" && score > 0) {
+                const porcentaje = (score * 100).toFixed(1);
+                div.innerHTML = `
+                    <div>${text}</div>
+                    <div class="${isToxic ? 'con-inapropiado' : 'sin-inapropiado'}" style="margin-top:5px; font-size: 0.9em;">
+                        ${isToxic ? `⚠ PROBABILIDAD DE GROSERÍA: ${porcentaje}%` : `✅ LIMPIO (${porcentaje}% grosero)`}
+                    </div>`;
             } else {
-                 bubble.innerHTML = `<p style="margin: 0;">${text}</p>`;
+                div.innerText = text;
             }
-            
-            messagesArea.appendChild(bubble);
+            messagesArea.appendChild(div);
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
-        
-        function analizar(textoOriginal) {
-            const texto = textoOriginal.toLowerCase();
-            const encontrados = malasPalabras.filter(p => texto.includes(p));
 
-            let resultClass;
-            if (encontrados.length > 0) {
-                resultClass = "con-inapropiado";
-            } else {
-                resultClass = "sin-inapropiado";
-            }
+        async function handleSend() {
+            const textoInput = document.getElementById("texto");
+            const text = textoInput.value;
+            if (!text) return;
 
-            createMessageBubble(textoOriginal, 'bot', resultClass);
+            addMessage(text, "user");
+            textoInput.value = "";
+
+            // PREDICCIÓN
+            const tensorInput = textoATensor(text);
+            const prediccion = model.predict(tensorInput);
+            const valor = prediccion.dataSync()[0]; // Obtener el número (entre 0 y 1)
+            
+            // Umbral: Si es mayor a 0.5 (50%), es grosería
+            const esGrosero = valor > 0.5;
+            
+            addMessage(esGrosero ? "Lenguaje inapropiado detectado." : "Mensaje permitido.", "bot", esGrosero, valor);
         }
 
-        function handleSend() {
-            const texto = textoInput.value.trim();
-            if (texto === "") return;
+        // Iniciar entrenamiento al cargar
+        entrenarModelo();
 
-            createMessageBubble(texto, 'user');
-            analizar(texto);
-
-            textoInput.value = '';
-            textoInput.style.height = 'auto'; 
-        }
-        
-        textoInput.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter' && !event.shiftKey) {
-                event.preventDefault();
-                handleSend();
-            }
-        });
-        
-        textoInput.addEventListener('input', function() {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
     </script>
 </body>
 </html>
