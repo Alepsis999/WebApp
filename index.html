@@ -1,10 +1,9 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector de Jerga Mexicana con IA</title>
+    <title>Detector de Jerga Mexicana V2</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
-        /* (MANTÉN TUS ESTILOS CSS ORIGINALES AQUÍ, NO LOS CAMBIÉ PARA AHORRAR ESPACIO) */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f3f2f1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .chat-container { width: 100%; max-width: 650px; height: 85vh; background-color: #e5ddd5; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
         .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; }
@@ -16,31 +15,37 @@
         .message-bot { align-self: flex-start; background-color: #fff; }
         .con-inapropiado { color: #d9534f; font-weight: bold; }
         .sin-inapropiado { color: #217346; font-weight: bold; }
+        .loading { font-style: italic; color: #666; font-size: 0.9em; text-align: center; margin-top: 10px;}
     </style>
 </head>
 <body>
 
     <div class="chat-container">
-        <div class="header">Detector de Jerga Mexicana (TensorFlow.js)</div>
+        <div class="header">Detector V2: Calibrado y Más Preciso</div>
         <div class="messages-area" id="messages-area">
-            <div class="message-bubble message-bot">
-                Inicializando red neuronal con jerga mexicana... espere un momento.
+            <div class="loading" id="status-msg">
+                🧠 Entrenando neuronas con ejemplos de oficina y calle... (0%)
             </div>
         </div>
         <div class="input-area">
-            <textarea id="texto" placeholder="Entrenando IA..." disabled></textarea>
-            <button onclick="handleSend()">Enviar</button>
+            <textarea id="texto" placeholder="Esperando a la IA..." disabled></textarea>
+            <button onclick="handleSend()" id="btn-send" disabled>Enviar</button>
         </div>
     </div>
 
     <script>
         let model;
-        let vocabulario = {}; // Diccionario para convertir palabras a números
-        const maxLongitud = 20; // Máximo de palabras por frase a analizar
+        let vocabulario = {}; 
+        const maxLongitud = 20; 
+        
+        // AJUSTE 1: UMBRAL MÁS ALTO
+        // Solo marcará grosería si está 80% seguro. Esto elimina falsos positivos como "Hola".
+        const UMBRAL_DETECTAR = 0.80; 
 
-        // 1. DATASET DE ENTRENAMIENTO (Jerga Mexicana)
-        // 1 = Grosero, 0 = Limpio
+        // AJUSTE 2: DATASET BALANCEADO
+        // Agregamos MUCHAS frases normales para que la IA se calme.
         const datosEntrenamiento = [
+            // --- LO MALO (1) ---
             { text: "eres un pendejo", label: 1 },
             { text: "vete a la verga", label: 1 },
             { text: "chinga tu madre", label: 1 },
@@ -51,47 +56,64 @@
             { text: "vales verga", label: 1 },
             { text: "no seas mamon", label: 1 },
             { text: "estas bien idiota", label: 1 },
-            { text: "hola como estas", label: 0 },
-            { text: "buenos dias amigo", label: 0 },
-            { text: "muchas gracias", label: 0 },
+            { text: "eres una mierda", label: 1 },
+            { text: "me caga tu actitud", label: 1 },
+            { text: "estupido", label: 1 },
+            { text: "imbecil de mierda", label: 1 },
+            { text: "pendeja", label: 1 },
+            { text: "a la verga todo", label: 1 },
+
+            // --- LO BUENO / NORMAL (0) ---
+            // Saludos básicos (CRUCIAL para arreglar el error del "Hola")
+            { text: "hola", label: 0 },
+            { text: "hola a todos", label: 0 },
+            { text: "hola buenos dias", label: 0 },
+            { text: "hola buenas tardes", label: 0 },
+            { text: "que tal", label: 0 },
+            { text: "buen dia equipo", label: 0 },
+            
+            // Frases de trabajo
+            { text: "ya termine el reporte", label: 0 },
+            { text: "podemos tener una reunion", label: 0 },
+            { text: "gracias por la ayuda", label: 0 },
             { text: "el proyecto funciona bien", label: 0 },
-            { text: "vamos a comer", label: 0 },
-            { text: "que tengas buen dia", label: 0 },
             { text: "microsoft teams es util", label: 0 },
-            { text: "estoy programando codigo", label: 0 }
+            { text: "estoy programando codigo", label: 0 },
+            { text: "te envio el archivo", label: 0 },
+            { text: "quedo pendiente a tus comentarios", label: 0 },
+            { text: "excelente trabajo", label: 0 },
+            { text: "por favor revisa el correo", label: 0 },
+            { text: "necesito aprobacion", label: 0 },
+            { text: "subiendo cambios a github", label: 0 },
+            { text: "vercel esta desplegado", label: 0 },
+            
+            // Frases coloquiales limpias (Para que no confunda jerga con grosería)
+            { text: "esta chido esto", label: 0 },
+            { text: "no manches esta genial", label: 0 }, 
+            { text: "que onda como estas", label: 0 },
+            { text: "ahorita lo checo", label: 0 },
+            { text: "simon luego vemos", label: 0 }
         ];
 
-        // 2. PREPROCESAMIENTO: "Bolsa de Palabras"
-        // Convertimos texto a números porque la IA solo entiende matemáticas
         function procesarDatos() {
             let palabrasUnicas = new Set();
-            
-            // Extraer todas las palabras únicas del dataset
             datosEntrenamiento.forEach(d => {
                 const palabras = d.text.toLowerCase().split(/\s+/);
                 palabras.forEach(p => palabrasUnicas.add(p));
             });
-
-            // Crear diccionario (índice)
-            Array.from(palabrasUnicas).forEach((word, index) => {
-                vocabulario[word] = index + 1; // +1 para reservar 0 como "relleno"
-            });
+            let i = 1;
+            palabrasUnicas.forEach(word => { vocabulario[word] = i++; });
         }
 
         function textoATensor(texto) {
             const palabras = texto.toLowerCase().replace(/[^\w\s]/gi, '').split(/\s+/);
-            const secuencia = palabras.map(p => vocabulario[p] || 0); // 0 si la palabra no existe
-            
-            // Rellenar o cortar para que siempre tenga el mismo tamaño (padding)
+            const secuencia = palabras.map(p => vocabulario[p] || 0);
             while (secuencia.length < maxLongitud) secuencia.push(0);
             return tf.tensor2d([secuencia.slice(0, maxLongitud)]);
         }
 
-        // 3. CREAR Y ENTRENAR MODELO
         async function entrenarModelo() {
             procesarDatos();
-
-            // Preparar tensores (matrices matemáticas)
             const inputs = datosEntrenamiento.map(d => {
                 const seq = d.text.toLowerCase().split(/\s+/).map(p => vocabulario[p] || 0);
                 while (seq.length < maxLongitud) seq.push(0);
@@ -102,26 +124,31 @@
             const xs = tf.tensor2d(inputs);
             const ys = tf.tensor2d(labels, [labels.length, 1]);
 
-            // Definir arquitectura de la Red Neuronal
             model = tf.sequential();
-            // Capa de Entrada (Embedding simple)
-            model.add(tf.layers.dense({inputShape: [maxLongitud], units: 16, activation: 'relu'}));
-            model.add(tf.layers.dense({units: 8, activation: 'relu'}));
-            // Capa de Salida (1 neurona: 0 a 1)
+            // Simplificamos un poco la red para evitar que "memorice" demasiado rápido
+            model.add(tf.layers.dense({inputShape: [maxLongitud], units: 8, activation: 'relu'})); 
             model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
 
-            model.compile({optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy']});
+            model.compile({optimizer: tf.train.adam(0.05), loss: 'binaryCrossentropy', metrics: ['accuracy']});
 
-            // Entrenar
-            await model.fit(xs, ys, {epochs: 50}); 
+            // Entrenamos con callback para ver progreso
+            await model.fit(xs, ys, {
+                epochs: 60, // Un poco más de epochs ahora que hay más datos
+                callbacks: {
+                    onEpochEnd: (epoch, logs) => {
+                       if(epoch % 10 === 0) console.log(`Epoch ${epoch}: loss = ${logs.loss}`);
+                    }
+                }
+            });
             
             // UI Update
+            document.getElementById("status-msg").style.display = 'none';
             document.getElementById("texto").disabled = false;
             document.getElementById("texto").placeholder = "Escribe algo...";
-            addMessage("¡IA Entrenada y lista para detectar jerga!", "bot");
+            document.getElementById("btn-send").disabled = false;
+            addMessage("¡Listo! Intenta escribir 'Hola' (debería ser limpio) o una grosería.", "bot");
         }
 
-        // 4. LÓGICA DE INTERFAZ (UI)
         const messagesArea = document.getElementById("messages-area");
 
         function addMessage(text, sender, isToxic = false, score = 0) {
@@ -130,10 +157,11 @@
             
             if (sender === "bot" && score > 0) {
                 const porcentaje = (score * 100).toFixed(1);
+                // Lógica visual: Si es bajo porcentaje, mostramos verde. Si es alto, rojo.
                 div.innerHTML = `
                     <div>${text}</div>
-                    <div class="${isToxic ? 'con-inapropiado' : 'sin-inapropiado'}" style="margin-top:5px; font-size: 0.9em;">
-                        ${isToxic ? `⚠ PROBABILIDAD DE GROSERÍA: ${porcentaje}%` : `✅ LIMPIO (${porcentaje}% grosero)`}
+                    <div class="${isToxic ? 'con-inapropiado' : 'sin-inapropiado'}" style="margin-top:5px; font-size: 0.85em;">
+                        ${isToxic ? `⚠ ALTA PROBABILIDAD DE GROSERÍA: ${porcentaje}%` : `✅ LIMPIO (Nivel de riesgo: ${porcentaje}%)`}
                     </div>`;
             } else {
                 div.innerText = text;
@@ -150,19 +178,20 @@
             addMessage(text, "user");
             textoInput.value = "";
 
-            // PREDICCIÓN
             const tensorInput = textoATensor(text);
             const prediccion = model.predict(tensorInput);
-            const valor = prediccion.dataSync()[0]; // Obtener el número (entre 0 y 1)
+            const valor = prediccion.dataSync()[0]; 
             
-            // Umbral: Si es mayor a 0.5 (50%), es grosería
-            const esGrosero = valor > 0.5;
+            // AQUI ESTA LA MAGIA: Solo si supera el umbral alto (0.80) avisamos
+            const esGrosero = valor > UMBRAL_DETECTAR;
             
-            addMessage(esGrosero ? "Lenguaje inapropiado detectado." : "Mensaje permitido.", "bot", esGrosero, valor);
+            let respuestaBot = esGrosero ? "Lenguaje inapropiado detectado." : "Mensaje seguro.";
+            
+            addMessage(respuestaBot, "bot", esGrosero, valor);
         }
 
-        // Iniciar entrenamiento al cargar
-        entrenarModelo();
+        // Iniciar
+        setTimeout(entrenarModelo, 500); // Pequeña pausa para asegurar carga
 
     </script>
 </body>
