@@ -1,9 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector de Jerga Mexicana V2</title>
+    <title>Detector IA Avanzado - Jerga Mexicana</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
+        /* MISMOS ESTILOS, SIN CAMBIOS VISUALES */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f3f2f1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .chat-container { width: 100%; max-width: 650px; height: 85vh; background-color: #e5ddd5; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
         .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; }
@@ -21,14 +22,14 @@
 <body>
 
     <div class="chat-container">
-        <div class="header">Detector V2: Calibrado y Más Preciso</div>
+        <div class="header">Detector IA V3: Anti-Evasión</div>
         <div class="messages-area" id="messages-area">
             <div class="loading" id="status-msg">
-                🧠 Entrenando neuronas con ejemplos de oficina y calle... (0%)
+                🧠 Cargando lógica avanzada y ventana deslizante...
             </div>
         </div>
         <div class="input-area">
-            <textarea id="texto" placeholder="Esperando a la IA..." disabled></textarea>
+            <textarea id="texto" placeholder="Iniciando motores..." disabled></textarea>
             <button onclick="handleSend()" id="btn-send" disabled>Enviar</button>
         </div>
     </div>
@@ -38,17 +39,16 @@
         let vocabulario = {}; 
         const maxLongitud = 20; 
         
-        // AJUSTE 1: UMBRAL MÁS ALTO
-        // Solo marcará grosería si está 80% seguro. Esto elimina falsos positivos como "Hola".
-        const UMBRAL_DETECTAR = 0.80; 
+        // UMBRAL AJUSTADO: Bajamos un poco porque ahora analizamos fragmentos cortos
+        const UMBRAL_DETECTAR = 0.75; 
 
-        // AJUSTE 2: DATASET BALANCEADO
-        // Agregamos MUCHAS frases normales para que la IA se calme.
+        // DATASET REFORZADO CON FRASES COMPUESTAS
         const datosEntrenamiento = [
-            // --- LO MALO (1) ---
+            // --- INSULTOS DIRECTOS (1) ---
             { text: "eres un pendejo", label: 1 },
             { text: "vete a la verga", label: 1 },
             { text: "chinga tu madre", label: 1 },
+            { text: "chingas a tu madre", label: 1 }, // Variación
             { text: "no mames guey", label: 1 },
             { text: "pinche cabron", label: 1 },
             { text: "que pedo puto", label: 1 },
@@ -56,44 +56,30 @@
             { text: "vales verga", label: 1 },
             { text: "no seas mamon", label: 1 },
             { text: "estas bien idiota", label: 1 },
-            { text: "eres una mierda", label: 1 },
-            { text: "me caga tu actitud", label: 1 },
+            { text: "mierda", label: 1 },
+            { text: "puta madre", label: 1 }, // Frase corta clave
             { text: "estupido", label: 1 },
-            { text: "imbecil de mierda", label: 1 },
             { text: "pendeja", label: 1 },
-            { text: "a la verga todo", label: 1 },
+            { text: "a la verga", label: 1 },
 
-            // --- LO BUENO / NORMAL (0) ---
-            // Saludos básicos (CRUCIAL para arreglar el error del "Hola")
+            // --- PALABRAS LIMPIAS / NEUTRALES (0) ---
             { text: "hola", label: 0 },
-            { text: "hola a todos", label: 0 },
-            { text: "hola buenos dias", label: 0 },
-            { text: "hola buenas tardes", label: 0 },
-            { text: "que tal", label: 0 },
-            { text: "buen dia equipo", label: 0 },
-            
-            // Frases de trabajo
-            { text: "ya termine el reporte", label: 0 },
-            { text: "podemos tener una reunion", label: 0 },
-            { text: "gracias por la ayuda", label: 0 },
+            { text: "hola maestro", label: 0 }, // Contexto escolar/trabajo
+            { text: "maestro", label: 0 },
+            { text: "profesor", label: 0 },
+            { text: "compañero", label: 0 },
+            { text: "buenos dias", label: 0 },
+            { text: "muchas gracias", label: 0 },
             { text: "el proyecto funciona bien", label: 0 },
-            { text: "microsoft teams es util", label: 0 },
-            { text: "estoy programando codigo", label: 0 },
+            { text: "estoy programando", label: 0 },
             { text: "te envio el archivo", label: 0 },
-            { text: "quedo pendiente a tus comentarios", label: 0 },
+            { text: "quedo pendiente", label: 0 },
             { text: "excelente trabajo", label: 0 },
-            { text: "por favor revisa el correo", label: 0 },
-            { text: "necesito aprobacion", label: 0 },
-            { text: "subiendo cambios a github", label: 0 },
-            { text: "vercel esta desplegado", label: 0 },
-            
-            // Frases coloquiales limpias (Para que no confunda jerga con grosería)
-            { text: "esta chido esto", label: 0 },
-            { text: "no manches esta genial", label: 0 }, 
-            { text: "que onda como estas", label: 0 },
-            { text: "ahorita lo checo", label: 0 },
-            { text: "simon luego vemos", label: 0 }
+            { text: "esta chido", label: 0 },
+            { text: "no manches", label: 0 }
         ];
+
+        // --- FUNCIONES DE INTELIGENCIA DE DATOS ---
 
         function procesarDatos() {
             let palabrasUnicas = new Set();
@@ -112,6 +98,14 @@
             return tf.tensor2d([secuencia.slice(0, maxLongitud)]);
         }
 
+        // --- TRUCO 1: RECONSTRUCCIÓN DE ESPACIOS (Anti p e n d e j o) ---
+        function reconstruirPalabras(texto) {
+            // Esta expresión regular busca letras solas seguidas de espacio y las une
+            // Ejemplo: "h o l a" -> "hola"
+            let textoLimpio = texto.replace(/\b(\w)\s+(?=\w\b)/g, '$1');
+            return textoLimpio;
+        }
+
         async function entrenarModelo() {
             procesarDatos();
             const inputs = datosEntrenamiento.map(d => {
@@ -125,28 +119,18 @@
             const ys = tf.tensor2d(labels, [labels.length, 1]);
 
             model = tf.sequential();
-            // Simplificamos un poco la red para evitar que "memorice" demasiado rápido
-            model.add(tf.layers.dense({inputShape: [maxLongitud], units: 8, activation: 'relu'})); 
+            model.add(tf.layers.dense({inputShape: [maxLongitud], units: 16, activation: 'relu'})); // Más neuronas para entender contexto
             model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
 
             model.compile({optimizer: tf.train.adam(0.05), loss: 'binaryCrossentropy', metrics: ['accuracy']});
 
-            // Entrenamos con callback para ver progreso
-            await model.fit(xs, ys, {
-                epochs: 60, // Un poco más de epochs ahora que hay más datos
-                callbacks: {
-                    onEpochEnd: (epoch, logs) => {
-                       if(epoch % 10 === 0) console.log(`Epoch ${epoch}: loss = ${logs.loss}`);
-                    }
-                }
-            });
+            await model.fit(xs, ys, { epochs: 70 }); // Más epochs para asegurar aprendizaje
             
-            // UI Update
             document.getElementById("status-msg").style.display = 'none';
             document.getElementById("texto").disabled = false;
             document.getElementById("texto").placeholder = "Escribe algo...";
             document.getElementById("btn-send").disabled = false;
-            addMessage("¡Listo! Intenta escribir 'Hola' (debería ser limpio) o una grosería.", "bot");
+            addMessage("¡Sistema V3 Activado! Detecta palabras ocultas y frases mixtas.", "bot");
         }
 
         const messagesArea = document.getElementById("messages-area");
@@ -157,11 +141,10 @@
             
             if (sender === "bot" && score > 0) {
                 const porcentaje = (score * 100).toFixed(1);
-                // Lógica visual: Si es bajo porcentaje, mostramos verde. Si es alto, rojo.
                 div.innerHTML = `
                     <div>${text}</div>
                     <div class="${isToxic ? 'con-inapropiado' : 'sin-inapropiado'}" style="margin-top:5px; font-size: 0.85em;">
-                        ${isToxic ? `⚠ ALTA PROBABILIDAD DE GROSERÍA: ${porcentaje}%` : `✅ LIMPIO (Nivel de riesgo: ${porcentaje}%)`}
+                        ${isToxic ? `⚠ PROBABILIDAD DE GROSERÍA: ${porcentaje}%` : `✅ LIMPIO (Riesgo: ${porcentaje}%)`}
                     </div>`;
             } else {
                 div.innerText = text;
@@ -170,28 +153,59 @@
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
 
+        // --- TRUCO 2: VENTANA DESLIZANTE (Sliding Window) ---
+        // Analiza el texto en grupos de 3 palabras para encontrar groserías escondidas entre palabras bonitas
+        async function predecirConVentana(texto) {
+            const palabras = texto.split(/\s+/);
+            
+            // Si es muy corto, analizar directo
+            if (palabras.length <= 3) {
+                const tensor = textoATensor(texto);
+                const p = model.predict(tensor);
+                return p.dataSync()[0];
+            }
+
+            // Si es largo, analizamos por trozos
+            let maximoRiesgo = 0;
+            const tamanoVentana = 3; // Analizar grupos de 3 palabras
+
+            for (let i = 0; i < palabras.length - 1; i++) {
+                // Crear frase parcial: "hola maestro chinga", "maestro chinga tu", etc.
+                const fragmento = palabras.slice(i, i + tamanoVentana).join(" ");
+                
+                const tensor = textoATensor(fragmento);
+                const prediccion = model.predict(tensor);
+                const puntaje = prediccion.dataSync()[0];
+                
+                // Nos quedamos con el riesgo más alto encontrado en cualquier parte de la frase
+                if (puntaje > maximoRiesgo) {
+                    maximoRiesgo = puntaje;
+                }
+            }
+            return maximoRiesgo;
+        }
+
         async function handleSend() {
             const textoInput = document.getElementById("texto");
-            const text = textoInput.value;
+            let text = textoInput.value;
             if (!text) return;
 
             addMessage(text, "user");
             textoInput.value = "";
 
-            const tensorInput = textoATensor(text);
-            const prediccion = model.predict(tensorInput);
-            const valor = prediccion.dataSync()[0]; 
+            // PASO 1: Reconstruir palabras tramposas (p e n d e j o -> pendejo)
+            const textoNormalizado = reconstruirPalabras(text);
+
+            // PASO 2: Predicción inteligente con ventana deslizante
+            const valor = await predecirConVentana(textoNormalizado);
             
-            // AQUI ESTA LA MAGIA: Solo si supera el umbral alto (0.80) avisamos
             const esGrosero = valor > UMBRAL_DETECTAR;
             
             let respuestaBot = esGrosero ? "Lenguaje inapropiado detectado." : "Mensaje seguro.";
-            
             addMessage(respuestaBot, "bot", esGrosero, valor);
         }
 
-        // Iniciar
-        setTimeout(entrenarModelo, 500); // Pequeña pausa para asegurar carga
+        setTimeout(entrenarModelo, 500);
 
     </script>
 </body>
