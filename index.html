@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector Teams - IA Estricta Completa</title>
+    <title>Detector Teams - Moderación Estricta</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
-        /* INTERFAZ DE MICROSOFT TEAMS - INTACTA */
+        /* INTERFAZ DE MICROSOFT TEAMS */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f3f2f1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .chat-container { width: 100%; max-width: 650px; height: 85vh; background-color: #e5ddd5; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
         .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -13,11 +13,17 @@
         .messages-area { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
         .input-area { padding: 10px; background-color: #f0f0f0; display: flex; }
         #texto { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; margin-right: 10px; outline: none; }
+        
+        /* Estilo para input bloqueado */
+        #texto:disabled { background-color: #e0e0e0; color: #888; cursor: not-allowed; }
+
         .message-bubble { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; max-width: 80%; line-height: 1.4; }
         .message-user { align-self: flex-end; background-color: #dcf8c6; }
         .message-bot { align-self: flex-start; background-color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
         .con-inapropiado { color: #c00; font-weight: bold; border-left: 3px solid #c00; padding-left: 5px; display: block; margin-top: 5px; font-size: 0.9em;}
         .sin-inapropiado { color: #217346; font-weight: bold; border-left: 3px solid #217346; padding-left: 5px; display: block; margin-top: 5px; font-size: 0.9em;}
+        .bloqueado-msg { color: #fff; background-color: #d9534f; padding: 5px 10px; border-radius: 5px; font-weight: bold; text-align: center; margin-top: 5px; font-size: 0.9em; }
+        
         button { background: #6264a7; color: white; border: none; padding: 0 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
         button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
@@ -27,17 +33,17 @@
     <div class="chat-container">
         <div class="header">
             <span id="status-indicator" class="status-dot"></span>
-            Detector Jerga Mexicana (Full)
+            Detector con Bloqueo Automático
         </div>
 
         <div class="messages-area" id="messages-area">
             <div class="message-bubble message-bot">
-                <i>Cargando diccionario completo de variaciones y plurales...</i>
+                <i>Sistema de moderación activo. 2 faltas = Bloqueo.</i>
             </div>
         </div>
 
         <div class="input-area">
-            <textarea id="texto" placeholder="Entrenando..." disabled></textarea>
+            <textarea id="texto" placeholder="Entrenando IA..." disabled></textarea>
             <button onclick="handleSend()" id="btn-send" disabled>Enviar</button>
         </div>
     </div>
@@ -46,213 +52,126 @@
         // --- CONFIGURACIÓN ---
         let model;
         let vocabulario = []; 
-        const UMBRAL = 0.5; 
+        const UMBRAL = 0.6; 
+        
+        // --- CONFIGURACIÓN DE BLOQUEO ---
+        let faltasCometidas = 0;
+        const MAX_FALTAS = 2; // Al llegar a 2, se bloquea
 
-        // --- MEGA DATASET DE JERGA MEXICANA ---
-        // Incluye singulares, plurales, femeninos y aumentativos.
+        // --- DATASET CONTEXTUAL (V6) ---
         const dataset = [
-            // --- FAMILIA "P" (Puto/a) ---
-            { text: "puto", label: 1 },
+            // Contextos Malos
+            { text: "eres un pendejo", label: 1 },
+            { text: "estas pendejo", label: 1 },
+            { text: "pinche pendejo", label: 1 },
+            { text: "vales verga", label: 1 }, 
+            { text: "vete a la verga", label: 1 }, 
+            { text: "chinga tu madre", label: 1 }, 
+            { text: "vas a chingar a tu madre", label: 1 },
+            { text: "eres un cabron", label: 1 }, 
+            { text: "pinche cabron", label: 1 },
+            { text: "hijo de puta", label: 1 },
+            { text: "que puto eres", label: 1 },
+            { text: "no mames", label: 1 },
+            { text: "es una mierda", label: 1 },
+            { text: "esta de la chingada", label: 1 },
             { text: "putos", label: 1 },
-            { text: "puta", label: 1 },
-            { text: "putas", label: 1 },
-            { text: "putiza", label: 1 }, // Golpiza
-            { text: "putazo", label: 1 },
-            { text: "putazos", label: 1 },
-            { text: "puteria", label: 1 },
-            { text: "puterias", label: 1 },
-            { text: "reputisima", label: 1 },
-
-            // --- FAMILIA "P" (Pendejo/a) ---
-            { text: "pendejo", label: 1 },
-            { text: "pendejos", label: 1 },
-            { text: "pendeja", label: 1 },
-            { text: "pendejas", label: 1 },
-            { text: "pendejada", label: 1 },
-            { text: "pendejadas", label: 1 },
-            { text: "apendejado", label: 1 },
-
-            // --- FAMILIA "C" (Cabrón) ---
-            { text: "cabron", label: 1 },
             { text: "cabrones", label: 1 },
-            { text: "cabrona", label: 1 },
-            { text: "cabronas", label: 1 },
-            { text: "encabronado", label: 1 }, // Enojado (contexto grosero)
-            { text: "encabronada", label: 1 },
 
-            // --- FAMILIA "V" (Verga) ---
-            { text: "verga", label: 1 },
-            { text: "vergas", label: 1 },
-            { text: "vergazo", label: 1 },
-            { text: "vergazos", label: 1 },
-            { text: "verguiza", label: 1 },
-            { text: "averlo", label: 1 }, // Juego de palabras común "a ver..."
-
-            // --- FAMILIA "CH" (Chingar) ---
-            { text: "chinga", label: 1 },
-            { text: "chingas", label: 1 },
-            { text: "chingan", label: 1 },
-            { text: "chingada", label: 1 }, // "A la chingada"
-            { text: "chingados", label: 1 },
-            { text: "chingadazo", label: 1 },
-            { text: "chingadazos", label: 1 },
-            { text: "chingadera", label: 1 },
-            { text: "chingaderas", label: 1 },
-            { text: "chingon", label: 1 }, // A veces es bueno, pero en ambiente laboral formal puede ser alerta
-            { text: "chingones", label: 1 },
-
-            // --- FAMILIA "M" (Madre/Mamar/Mierda) ---
-            { text: "madre", label: 0 }, // "Madre" sola es segura (ej: mi madre)
-            { text: "madres", label: 0 },
-            { text: "madrear", label: 1 }, // Golpear
-            { text: "madriza", label: 1 },
-            { text: "madrazo", label: 1 },
-            { text: "madrazos", label: 1 },
-            { text: "desmadre", label: 1 }, // Relajo excesivo
-            { text: "mamon", label: 1 },
-            { text: "mamones", label: 1 },
-            { text: "mamona", label: 1 },
-            { text: "mamonas", label: 1 },
-            { text: "mamada", label: 1 },
-            { text: "mamadas", label: 1 },
-            { text: "mames", label: 1 }, // "No mames"
-            { text: "mierda", label: 1 },
-            { text: "mierdas", label: 1 },
-            { text: "mierdero", label: 1 },
-
-            // --- INSULTOS DE INTELIGENCIA ---
-            { text: "idiota", label: 1 },
-            { text: "idiotas", label: 1 },
-            { text: "estupido", label: 1 },
-            { text: "estupidos", label: 1 },
-            { text: "estupida", label: 1 },
-            { text: "estupidas", label: 1 },
-            { text: "imbecil", label: 1 },
-            { text: "imbeciles", label: 1 },
-            { text: "tarado", label: 1 },
-            { text: "tarados", label: 1 },
-            { text: "baboso", label: 1 },
-            { text: "babosos", label: 1 },
-
-            // --- OTROS COMUNES ---
-            { text: "pinche", label: 1 },
-            { text: "pinches", label: 1 },
-            { text: "culo", label: 1 },
-            { text: "culos", label: 1 },
-            { text: "culero", label: 1 },
-            { text: "culeros", label: 1 },
-            { text: "ojete", label: 1 },
-            { text: "ojetes", label: 1 },
-            { text: "joder", label: 1 },
-            { text: "jodido", label: 1 },
-            { text: "cagar", label: 1 }, // "La cagaste"
-            { text: "cagado", label: 1 },
-            { text: "puñetas", label: 1 },
-            { text: "huevo", label: 0 }, // Huevo (comida) es seguro
-            { text: "huevos", label: 1 }, // Huevos (testiculos/valor) suele ser alerta
-            { text: "huevon", label: 1 }, // Flojo
-            { text: "huevones", label: 1 },
-
-            // --- PALABRAS LIMPIAS (Para evitar confusión) ---
-            { text: "wey", label: 0 }, // Wey es muy comun y no ofensivo hoy dia
-            { text: "guey", label: 0 },
+            // Contextos Buenos/Neutros (Sentimiento)
+            { text: "esta bien vergas", label: 0 }, 
+            { text: "eres la verga", label: 0 }, 
+            { text: "esta perron", label: 0 }, 
+            { text: "que onda cabron", label: 0 }, 
+            { text: "hola cabrones", label: 0 }, 
+            { text: "un chingo", label: 0 }, 
+            { text: "te quiero un chingo", label: 0 }, 
+            { text: "esta chingon", label: 0 }, 
+            { text: "eres un chingon", label: 0 }, 
+            { text: "que pedo", label: 0 }, 
+            { text: "no manches", label: 0 }, 
+            
+            // Neutros Seguridad
             { text: "hola", label: 0 },
-            { text: "buenos", label: 0 },
-            { text: "dias", label: 0 },
+            { text: "buenos dias", label: 0 },
             { text: "maestra", label: 0 },
-            { text: "maestro", label: 0 },
-            { text: "que", label: 0 },
-            { text: "tal", label: 0 },
-            { text: "gracias", label: 0 },
-            { text: "saludos", label: 0 },
-            { text: "equipo", label: 0 }
+            { text: "trabajo", label: 0 },
+            { text: "proyecto", label: 0 }
         ];
 
-        // --- PREPARACIÓN DE DATOS ---
+        // --- TOKENIZER (N-Grams) ---
+        function obtenerTokens(texto) {
+            const limpio = texto.toLowerCase()
+                .replace(/\b(\w)\s+(?=\w\b)/g, '$1') 
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+            
+            const palabras = limpio.split(/\s+/).filter(p => p.length > 0);
+            const tokens = [...palabras]; 
+
+            for (let i = 0; i < palabras.length - 1; i++) {
+                tokens.push(palabras[i] + "_" + palabras[i+1]);
+            }
+            
+            for (let i = 0; i < palabras.length - 2; i++) {
+                tokens.push(palabras[i] + "_" + palabras[i+1] + "_" + palabras[i+2]);
+            }
+            return tokens;
+        }
+
         function prepararDatos() {
-            const todasLasPalabras = new Set();
-            dataset.forEach(item => todasLasPalabras.add(item.text));
-            vocabulario = Array.from(todasLasPalabras).sort();
-
-            console.log("Vocabulario aprendido:", vocabulario);
-
+            const vocabSet = new Set();
+            dataset.forEach(item => {
+                const tokens = obtenerTokens(item.text);
+                tokens.forEach(t => vocabSet.add(t));
+            });
+            vocabulario = Array.from(vocabSet).sort();
+            
             const inputs = [];
             const labels = [];
-
             dataset.forEach(item => {
                 const vector = new Array(vocabulario.length).fill(0);
-                const index = vocabulario.indexOf(item.text);
-                if (index !== -1) vector[index] = 1;
-                
+                const tokens = obtenerTokens(item.text);
+                tokens.forEach(t => {
+                    const index = vocabulario.indexOf(t);
+                    if (index !== -1) vector[index] = 1;
+                });
                 inputs.push(vector);
                 labels.push(item.label);
             });
-
-            return {
-                xs: tf.tensor2d(inputs),
-                ys: tf.tensor2d(labels, [labels.length, 1])
-            };
+            return { xs: tf.tensor2d(inputs), ys: tf.tensor2d(labels, [labels.length, 1]) };
         }
 
         // --- ENTRENAMIENTO ---
         async function iniciarIA() {
             const data = prepararDatos();
-
             model = tf.sequential();
-            model.add(tf.layers.dense({
-                inputShape: [vocabulario.length], 
-                units: 16, 
-                activation: 'relu'
-            }));
+            model.add(tf.layers.dense({ inputShape: [vocabulario.length], units: 32, activation: 'relu' }));
             model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
-
-            model.compile({
-                optimizer: tf.train.adam(0.1), 
-                loss: 'binaryCrossentropy',
-                metrics: ['accuracy']
-            });
-
-            await model.fit(data.xs, data.ys, {
-                epochs: 50, 
-                shuffle: true
-            });
+            model.compile({ optimizer: tf.train.adam(0.05), loss: 'binaryCrossentropy', metrics: ['accuracy'] });
+            await model.fit(data.xs, data.ys, { epochs: 60, shuffle: true });
 
             document.getElementById("status-indicator").classList.add("status-ready");
             document.getElementById("texto").disabled = false;
             document.getElementById("texto").placeholder = "Escribe un mensaje...";
             document.getElementById("btn-send").disabled = false;
-            document.querySelector(".message-bot i").innerText = "¡Listo! Base de datos de jerga actualizada.";
+            document.querySelector(".message-bot i").innerText = "Moderador Inteligente Listo.";
         }
 
         // --- ANÁLISIS ---
         async function analizarTexto(textoUsuario) {
-            let textoLimpio = textoUsuario.toLowerCase()
-                .replace(/\b(\w)\s+(?=\w\b)/g, '$1') // Unir letras
-                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
+            const tokensUsuario = obtenerTokens(textoUsuario);
+            const vector = new Array(vocabulario.length).fill(0);
+            let palabrasConocidas = 0;
 
-            const palabras = textoLimpio.split(/\s+/);
-            let maximoRiesgo = 0;
-            let palabraCulpable = "";
+            tokensUsuario.forEach(t => {
+                const index = vocabulario.indexOf(t);
+                if (index !== -1) { vector[index] = 1; palabrasConocidas++; }
+            });
 
-            for (let palabra of palabras) {
-                if (!vocabulario.includes(palabra)) {
-                    continue; 
-                }
-
-                const vector = new Array(vocabulario.length).fill(0);
-                vector[vocabulario.indexOf(palabra)] = 1;
-                const tensor = tf.tensor2d([vector]);
-
-                const prediccion = model.predict(tensor);
-                const score = prediccion.dataSync()[0];
-
-                if (score > maximoRiesgo) {
-                    maximoRiesgo = score;
-                    palabraCulpable = palabra;
-                }
-            }
-
-            return { score: maximoRiesgo, culpable: palabraCulpable };
+            if (palabrasConocidas === 0) return 0;
+            const tensor = tf.tensor2d([vector]);
+            const prediccion = model.predict(tensor);
+            return prediccion.dataSync()[0];
         }
 
         // --- INTERFAZ ---
@@ -266,7 +185,24 @@
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
 
+        // --- BLOQUEAR USUARIO ---
+        function bloquearUsuario() {
+            const input = document.getElementById("texto");
+            const btn = document.getElementById("btn-send");
+            
+            input.disabled = true;
+            input.value = "";
+            input.placeholder = "🚫 CHAT BLOQUEADO POR LENGUAJE OFENSIVO";
+            input.style.backgroundColor = "#ffe6e6";
+            
+            btn.disabled = true;
+            btn.style.backgroundColor = "#999";
+        }
+
         async function handleSend() {
+            // Verificar bloqueo antes de nada
+            if (faltasCometidas >= MAX_FALTAS) return;
+
             const input = document.getElementById("texto");
             const texto = input.value.trim();
             if (!texto) return;
@@ -274,27 +210,43 @@
             agregarMensaje(texto, 'user');
             input.value = "";
 
-            const resultado = await analizarTexto(texto);
-            const esToxico = resultado.score > UMBRAL;
-            const porcentaje = (resultado.score * 100).toFixed(1);
+            const score = await analizarTexto(texto);
+            const esToxico = score > UMBRAL;
+            const porcentaje = (score * 100).toFixed(1);
 
             let respuestaHTML = "";
             
             if (esToxico) {
-                respuestaHTML = `
-                    Texto analizado.
-                    <span class="con-inapropiado">
-                        ⚠ ADVERTENCIA SERÁS ELIMINADO DE LA SESION (${porcentaje}%)
-                    </span>
-                    <span style="font-size: 0.8em; color: #666;">
-                        Detectado por palabra: "<b>${resultado.culpable}</b>"
-                    </span>
-                `;
+                // SUMAR FALTA
+                faltasCometidas++;
+                const restantes = MAX_FALTAS - faltasCometidas;
+
+                if (faltasCometidas >= MAX_FALTAS) {
+                    // SE ACABARON LAS OPORTUNIDADES
+                    respuestaHTML = `
+                        <span class="con-inapropiado">
+                            ⚠ OFENSIVO (${porcentaje}%)
+                        </span>
+                        <div class="bloqueado-msg">
+                            🚫 HAS SIDO BLOQUEADO
+                        </div>
+                    `;
+                    bloquearUsuario();
+                } else {
+                    // ADVERTENCIA
+                    respuestaHTML = `
+                        <span class="con-inapropiado">
+                            ⚠ OFENSIVO (${porcentaje}%)
+                        </span>
+                        <span style="font-size: 0.8em; color: #d9534f; font-weight: bold;">
+                            ¡Advertencia! Te queda ${restantes} intento(s).
+                        </span>
+                    `;
+                }
             } else {
                 respuestaHTML = `
-                    Texto analizado.
                     <span class="sin-inapropiado">
-                        ✅ MENSAJE SEGURO
+                        ✅ SEGURO (${porcentaje}%)
                     </span>
                 `;
             }
@@ -307,4 +259,3 @@
     </script>
 </body>
 </html>
-
