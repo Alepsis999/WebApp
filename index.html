@@ -1,758 +1,308 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector IA V7: Detección Avanzada</title>
+    <title>Detector Teams - IA Estricta Completa</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
-        body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .chat-container { width: 100%; max-width: 800px; height: 90vh; background: white; display: flex; flex-direction: column; border-radius: 15px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden; }
-        .header { background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); color: white; padding: 20px; text-align: center; font-weight: 700; font-size: 1.2em; }
-        .messages-area { flex-grow: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; background: #f8f9fa; }
-        .input-area { padding: 15px; background: white; display: flex; gap: 10px; border-top: 1px solid #e9ecef; }
-        #texto { flex-grow: 1; padding: 12px 15px; border-radius: 25px; border: 2px solid #e0e0e0; font-size: 14px; resize: none; transition: all 0.3s; }
-        #texto:focus { outline: none; border-color: #4b6cb7; box-shadow: 0 0 0 3px rgba(75, 108, 183, 0.1); }
-        #btn-send { padding: 12px 25px; background: linear-gradient(90deg, #4b6cb7 0%, #182848 100%); color: white; border: none; border-radius: 25px; cursor: pointer; font-weight: 600; transition: all 0.3s; }
-        #btn-send:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(75, 108, 183, 0.4); }
-        .message-bubble { margin-bottom: 12px; padding: 12px 18px; border-radius: 18px; max-width: 85%; word-wrap: break-word; line-height: 1.5; }
-        .message-user { align-self: flex-end; background: linear-gradient(90deg, #667eea 0%, #764ba2 100%); color: white; }
-        .message-bot { align-self: flex-start; background: white; border: 1px solid #e0e0e0; }
-        .groseria { background: #fff5f5; color: #c53030; padding: 2px 6px; border-radius: 4px; border: 1px solid #fed7d7; font-weight: bold; }
-        .con-inapropiado { color: #c53030; font-weight: bold; }
-        .sin-inapropiado { color: #38a169; font-weight: bold; }
-        .loading { font-style: italic; color: #6c757d; text-align: center; padding: 20px; }
-        .stats { display: flex; justify-content: space-around; background: #f1f3f4; padding: 10px; border-radius: 10px; margin: 10px 0; font-size: 0.9em; }
-        .stat-item { text-align: center; }
-        .stat-value { font-weight: bold; font-size: 1.2em; }
-        .modalidad { background: #e3f2fd; padding: 10px; border-radius: 10px; margin: 10px 0; text-align: center; font-weight: 500; }
-        .suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
-        .suggestion-btn { background: #e9ecef; border: 1px solid #dee2e6; padding: 6px 12px; border-radius: 15px; cursor: pointer; font-size: 12px; transition: all 0.2s; }
-        .suggestion-btn:hover { background: #4b6cb7; color: white; }
+        /* INTERFAZ DE MICROSOFT TEAMS - INTACTA */
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f3f2f1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .chat-container { width: 100%; max-width: 650px; height: 85vh; background-color: #e5ddd5; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
+        .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; }
+        .status-ready { background-color: #00ff00; box-shadow: 0 0 5px #00ff00; }
+        .messages-area { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
+        .input-area { padding: 10px; background-color: #f0f0f0; display: flex; }
+        #texto { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; margin-right: 10px; outline: none; }
+        .message-bubble { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; max-width: 80%; line-height: 1.4; }
+        .message-user { align-self: flex-end; background-color: #dcf8c6; }
+        .message-bot { align-self: flex-start; background-color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .con-inapropiado { color: #c00; font-weight: bold; border-left: 3px solid #c00; padding-left: 5px; display: block; margin-top: 5px; font-size: 0.9em;}
+        .sin-inapropiado { color: #217346; font-weight: bold; border-left: 3px solid #217346; padding-left: 5px; display: block; margin-top: 5px; font-size: 0.9em;}
+        button { background: #6264a7; color: white; border: none; padding: 0 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="chat-container">
-        <div class="header">🤖 Detector IA V7: Análisis Contextual Avanzado</div>
-        
-        <div class="modalidad">
-            Modo: <select id="modo" onchange="cambiarModo()">
-                <option value="estricto">🔴 Estricto (Alta sensibilidad)</option>
-                <option value="normal" selected>🟡 Normal (Balanceado)</option>
-                <option value="educativo">🟢 Educativo (Para aulas)</option>
-            </select>
+        <div class="header">
+            <span id="status-indicator" class="status-dot"></span>
+            Detector Jerga Mexicana (Full)
         </div>
-        
+
         <div class="messages-area" id="messages-area">
-            <div class="loading" id="status-msg">
-                <div>🚀 Inicializando detector inteligente...</div>
-                <div style="font-size: 0.8em; margin-top: 10px;">Creando modelo con 500+ palabras y expresiones</div>
-            </div>
-            
-            <div class="suggestions" id="suggestions">
-                <div class="suggestion-btn" onclick="sugerir('Hola, ¿cómo estás?')">Hola, ¿cómo estás?</div>
-                <div class="suggestion-btn" onclick="sugerir('Necesito ayuda con la tarea')">Necesito ayuda</div>
-                <div class="suggestion-btn" onclick="sugerir('Eres un maldito incompetente')">Prueba grosera</div>
-                <div class="suggestion-btn" onclick="sugerir('Excelente trabajo equipo')">Elogio</div>
+            <div class="message-bubble message-bot">
+                <i>Cargando diccionario completo de variaciones y plurales...</i>
             </div>
         </div>
-        
+
         <div class="input-area">
-            <textarea id="texto" placeholder="Escribe un mensaje..." disabled rows="2"></textarea>
-            <button onclick="handleSend()" id="btn-send" disabled>Analizar</button>
+            <textarea id="texto" placeholder="Entrenando..." disabled></textarea>
+            <button onclick="handleSend()" id="btn-send" disabled>Enviar</button>
         </div>
     </div>
 
     <script>
+        // --- CONFIGURACIÓN ---
         let model;
-        let vocabulario = {}; 
-        const maxLongitud = 30;
-        let modoActual = 'normal';
-        let estadisticas = {
-            totalAnalizados: 0,
-            groseriasDetectadas: 0,
-            falsosPositivos: 0,
-            ultimoAnalisis: null
-        };
+        let vocabulario = []; 
+        const UMBRAL = 0.5; 
 
-        // CONFIGURACIONES POR MODO
-        const configModos = {
-            estricto: { umbral: 0.65, analisisProfundo: true, contextoEstricto: true },
-            normal: { umbral: 0.75, analisisProfundo: true, contextoEstricto: false },
-            educativo: { umbral: 0.85, analisisProfundo: true, contextoEstricto: false }
-        };
+        // --- MEGA DATASET DE JERGA MEXICANA ---
+        // Incluye singulares, plurales, femeninos y aumentativos.
+        const dataset = [
+            // --- FAMILIA "P" (Puto/a) ---
+            { text: "puto", label: 1 },
+            { text: "putos", label: 1 },
+            { text: "puta", label: 1 },
+            { text: "putas", label: 1 },
+            { text: "putiza", label: 1 }, // Golpiza
+            { text: "putazo", label: 1 },
+            { text: "putazos", label: 1 },
+            { text: "puteria", label: 1 },
+            { text: "puterias", label: 1 },
+            { text: "reputisima", label: 1 },
 
-        // DICCIONARIO AMPLIADO DE PALABRAS Y EXPRESIONES
-        const diccionario = {
-            // PALABRAS GROSERAS (CATEGORIZADAS)
-            gros_Graves: [
-                "puto", "puta", "putos", "putas", "putamadre", "hijodeputa", "hijaputa",
-                "verga", "vergazos", "verguisa", "vergüenza", "vergonzoso",
-                "chinga", "chingar", "chingada", "chingado", "chingaquedito", "chingadera",
-                "pendejo", "pendeja", "pendejada", "pendejos", "pendejas",
-                "cabrón", "cabrona", "cabrones", "cabronazo",
-                "mierda", "mierdero", "mierdoso", "mierdita",
-                "estúpido", "estúpida", "estupidez", "estupideces",
-                "imbécil", "imbecil", "imbeciles", "imbécilidad",
-                "mamón", "mamona", "mamonada", "mamones",
-                "culero", "culera", "culerada",
-                "joder", "jodido", "jodida", "jodidamente",
-                "coño", "concha", "conchatumadre",
-                "carajo", "carajillo", "carajada",
-                "chingatumadre", "vetealav", "valesverga", "nomames", "nomas",
-                "pinche", "pinches", "pinchemente",
-                "maldito", "maldita", "maldición",
-                "bastardo", "bastarda", "bastardos",
-                "desgraciado", "desgraciada", "desgraciados",
-                "idiota", "idiotez", "idiotas",
-                "tarado", "tarada", "tarados",
-                "retrasado", "retrasada", "retrasados",
-                "anormal", "anormales",
-                "subnormal", "subnormales",
-                "tonto", "tonta", "tontería", "tonterías",
-                "gilipollas", "gilipollez",
-                "zopenco", "zopenca", "zopencos"
-            ],
-            
-            gros_Moderadas: [
-                "caray", "caramba", "recórcholis", "diablos", "demonios",
-                "rayos", "miercoles", "jolín", "hostia", "ostras",
-                "porras", "puñeta", "puñetas", "puñetero", "puñetera",
-                "cojones", "cojonudo", "cojonuda",
-                "leche", "leches", "hostias",
-                "jopelines", "jopetas", "mecachis",
-                "pardiez", "parbleu", "córcholis"
-            ],
-            
-            gros_Regionalismos: [
-                "güey", "wey", "guey", // México
-                "boludo", "pelotudo", "choto", "chota", // Argentina
-                "huevón", "weon", "weón", "huevon", // Chile
-                "parcero", "parce", // Colombia
-                "pana", "chamo", // Venezuela
-                "tío", "tía", "joder", "coño", // España
-                "mano", "maje", // Centroamérica
-                "bicho", "carajo", // Caribe
-                "pirobo", "pirobos", // Colombia
-                "malparido", "malparida", // Varios
-                "careverga", "caremondá", // Colombia
-                "chimba", // Colombia
-                "chucha", "conchatumadre" // Perú/Chile
-            ],
-            
-            gros_Insultos: [
-                "inútil", "incompetente", "incapaz", "inservible",
-                "fracasado", "fracasada", "fracasados",
-                "mediocre", "mediocridad",
-                "patán", "patana", "patanes",
-                "ordinario", "ordinaria", "ordinarios",
-                "grosero", "grosera", "groseros",
-                "maleducado", "maleducada", "maleducados",
-                "cerdo", "cerda", "cerdos",
-                "animal", "bestia", "bruto", "bruta",
-                "asqueroso", "asquerosa", "asquerosos",
-                "repugnante", "repugnantes",
-                "despreciable", "despreciables",
-                "miserable", "miserables",
-                "infeliz", "infelices",
-                "canalla", "canallas",
-                "sinvergüenza", "sinvergonzón",
-                "traidor", "traidora", "traidores",
-                "cobarde", "cobardía",
-                "hipócrita", "hipocresía"
-            ],
-            
-            // PALABRAS POSITIVAS/EDUCADAS
-            pos_Saludos: [
-                "hola", "buenos", "días", "buenas", "tardes", "noches",
-                "saludos", "cordial", "saludo", "estimado", "estimada",
-                "querido", "querida", "apreciado", "apreciada",
-                "encantado", "encantada", "gusto", "muchogusto",
-                "presente", "asistencia", "asistir"
-            ],
-            
-            pos_Educacion: [
-                "maestro", "maestra", "profesor", "profesora", "docente",
-                "alumno", "alumna", "estudiante", "compañero", "compañera",
-                "colegio", "escuela", "universidad", "instituto",
-                "aula", "clase", "lección", "tema", "materia",
-                "tarea", "deberes", "ejercicio", "práctica",
-                "examen", "prueba", "evaluación", "calificación",
-                "aprender", "estudiar", "repasar", "practicar",
-                "enseñar", "educar", "formar", "instruir",
-                "conocimiento", "sabiduría", "aprendizaje"
-            ],
-            
-            pos_Cortesia: [
-                "porfavor", "por favor", "gracias", "agradecido", "agradecida",
-                "perdón", "disculpe", "disculpa", "permiso", "conpermiso",
-                "de nada", "nohayded", "bienvenido", "bienvenida",
-                "felicidades", "felicitaciones", "enhorabuena",
-                "ánimo", "ánimos", "fuerza", "adelante",
-                "excelente", "magnífico", "maravilloso", "fantástico",
-                "bueno", "buena", "buen", "bien", "correcto", "correcta",
-                "perfecto", "perfecta", "adecuado", "adecuada",
-                "apropiado", "apropiada", "idóneo", "idónea",
-                "amable", "cortés", "educado", "educada",
-                "respetuoso", "respetuosa", "considerado", "considerada"
-            ],
-            
-            pos_Colaboracion: [
-                "ayuda", "ayudar", "colaborar", "cooperar", "trabajaren",
-                "equipo", "grupo", "colegas", "compañerismo",
-                "proyecto", "trabajo", "asignación", "responsabilidad",
-                "compartir", "compartiendo", "colaboración", "cooperación",
-                "apoyo", "respaldar", "sostener", "sustentar",
-                "guiar", "orientar", "dirección", "liderazgo",
-                "motivar", "inspirar", "alentar", "impulsar"
-            ]
-        };
+            // --- FAMILIA "P" (Pendejo/a) ---
+            { text: "pendejo", label: 1 },
+            { text: "pendejos", label: 1 },
+            { text: "pendeja", label: 1 },
+            { text: "pendejas", label: 1 },
+            { text: "pendejada", label: 1 },
+            { text: "pendejadas", label: 1 },
+            { text: "apendejado", label: 1 },
 
-        // DATASET COMPLETO DE ENTRENAMIENTO (400+ EJEMPLOS)
-        const datosEntrenamiento = [
-            // ========== GROSERÍAS EXPLÍCITAS ==========
-            { text: "puto de mierda", label: 1 },
-            { text: "eres un puto inútil", label: 1 },
-            { text: "hijo de puta malparido", label: 1 },
-            { text: "vete a la puta madre", label: 1 },
-            { text: "chinga tu madre cabrón", label: 1 },
-            { text: "me cago en tu puta madre", label: 1 },
-            { text: "pendejo incompetente", label: 1 },
-            { text: "imbécil sin cerebro", label: 1 },
-            { text: "maldito sea tu estirpe", label: 1 },
-            { text: "bastardo traicionero", label: 1 },
-            { text: "desgraciado sinvergüenza", label: 1 },
-            { text: "idiota de mierda", label: 1 },
-            { text: "tarado mental", label: 1 },
-            { text: "subnormal de pacotilla", label: 1 },
-            { text: "tonto del culo", label: 1 },
-            { text: "gilipollas integral", label: 1 },
-            { text: "zopenco sin remedio", label: 1 },
-            { text: "anormal de nacimiento", label: 1 },
-            { text: "retrasado mental", label: 1 },
-            { text: "verga rota", label: 1 },
-            { text: "vales pura verga", label: 1 },
-            { text: "a la verga contigo", label: 1 },
-            { text: "no mames güey", label: 1 },
-            { text: "no manches cabrón", label: 1 },
-            { text: "pinche viejo culero", label: 1 },
-            { text: "mamón presumido", label: 1 },
-            { text: "culero mentiroso", label: 1 },
-            { text: "jodido problema tienes", label: 1 },
-            { text: "carajo con esta situación", label: 1 },
-            { text: "coño de tu madre", label: 1 },
-            { text: "conchatumadre", label: 1 },
-            
-            // ========== INSULTOS "SUAVES" ==========
-            { text: "eres un inútil", label: 0.8 },
-            { text: "que incompetente eres", label: 0.8 },
-            { text: "verdadero fracasado", label: 0.8 },
-            { text: "mediocre como siempre", label: 0.8 },
-            { text: "patán sin educación", label: 0.8 },
-            { text: "grosero de mierda", label: 1 },
-            { text: "maleducado de nacimiento", label: 0.9 },
-            { text: "cerdo asqueroso", label: 1 },
-            { text: "bruto animal", label: 1 },
-            { text: "repugnante persona", label: 0.9 },
-            { text: "despreciable ser", label: 0.9 },
-            { text: "miserable individuo", label: 0.9 },
-            { text: "canalla sin principios", label: 0.8 },
-            { text: "sinvergüenza total", label: 0.8 },
-            { text: "traidor de mierda", label: 1 },
-            { text: "cobarde de pacotilla", label: 0.7 },
-            { text: "hipócrita redomado", label: 0.7 },
-            
-            // ========== LENGUAJE NEUTRAL/EDUCADO ==========
-            { text: "hola buenos días maestra", label: 0 },
-            { text: "buenas tardes profesor", label: 0 },
-            { text: "saludos cordiales a todos", label: 0 },
-            { text: "estimado docente, buen día", label: 0 },
-            { text: "queridos compañeros, presente", label: 0 },
-            { text: "encantado de saludarlos", label: 0 },
-            { text: "mucho gusto en conocerlos", label: 0 },
-            { text: "me presento ante ustedes", label: 0 },
-            { text: "asistiré a la reunión", label: 0 },
-            { text: "estoy disponible para ayudar", label: 0 },
-            
-            // ========== CONTEXTO ESCOLAR ==========
-            { text: "la tarea de matemáticas", label: 0 },
-            { text: "el examen de ciencias naturales", label: 0 },
-            { text: "práctica de laboratorio química", label: 0 },
-            { text: "proyecto final de historia", label: 0 },
-            { text: "investigación sobre biología", label: 0 },
-            { text: "ensayo literario español", label: 0 },
-            { text: "presentación oral inglés", label: 0 },
-            { text: "trabajo en equipo educación física", label: 0 },
-            { text: "clase de música y arte", label: 0 },
-            { text: "taller de tecnología informática", label: 0 },
-            
-            // ========== PETICIONES EDUCADAS ==========
-            { text: "podría explicarme de nuevo por favor", label: 0 },
-            { text: "me gustaría solicitar ayuda con esto", label: 0 },
-            { text: "sería tan amable de revisar mi trabajo", label: 0 },
-            { text: "quisiera consultar una duda que tengo", label: 0 },
-            { text: "podría darme más información sobre", label: 0 },
-            { text: "me permito pedir su orientación", label: 0 },
-            { text: "agradecería su apoyo en este tema", label: 0 },
-            { text: "necesito asistencia con la actividad", label: 0 },
-            { text: "podría ayudarme a comprender mejor", label: 0 },
-            { text: "me hace falta entender este concepto", label: 0 },
-            
-            // ========== EXPRESIONES DE CORTESÍA ==========
-            { text: "muchas gracias por su tiempo", label: 0 },
-            { text: "agradezco enormemente su ayuda", label: 0 },
-            { text: "le estoy muy agradecido por todo", label: 0 },
-            { text: "mil gracias por su paciencia", label: 0 },
-            { text: "se lo agradezco de corazón", label: 0 },
-            { text: "disculpe las molestias ocasionadas", label: 0 },
-            { text: "perdón por el retraso en entregar", label: 0 },
-            { text: "con permiso, necesito salir", label: 0 },
-            { text: "de nada, es un placer ayudar", label: 0 },
-            { text: "bienvenido al grupo de estudio", label: 0 },
-            
-            // ========== MOTIVACIÓN Y ÁNIMO ==========
-            { text: "ánimo que tú puedes con esto", label: 0 },
-            { text: "mucho ánimo para el examen", label: 0 },
-            { text: "fuerza compañero que se puede", label: 0 },
-            { text: "adelante que vas por buen camino", label: 0 },
-            { text: "excelente trabajo el que hiciste", label: 0 },
-            { text: "magnífica presentación la tuya", label: 0 },
-            { text: "maravilloso aporte al proyecto", label: 0 },
-            { text: "fantástica idea se te ocurrió", label: 0 },
-            { text: "perfecta ejecución del ejercicio", label: 0 },
-            { text: "correcta respuesta a la pregunta", label: 0 },
-            
-            // ========== COLABORACIÓN Y TRABAJO EN EQUIPO ==========
-            { text: "vamos a trabajar en equipo", label: 0 },
-            { text: "colaboremos juntos en esto", label: 0 },
-            { text: "cooperemos para terminar a tiempo", label: 0 },
-            { text: "trabajemos unidos como grupo", label: 0 },
-            { text: "compartamos nuestras ideas", label: 0 },
-            { text: "colaboración es la clave", label: 0 },
-            { text: "cooperación entre compañeros", label: 0 },
-            { text: "apoyo mutuo en el aprendizaje", label: 0 },
-            { text: "respaldémonos unos a otros", label: 0 },
-            { text: "sostengamos este esfuerzo grupal", label: 0 }
+            // --- FAMILIA "C" (Cabrón) ---
+            { text: "cabron", label: 1 },
+            { text: "cabrones", label: 1 },
+            { text: "cabrona", label: 1 },
+            { text: "cabronas", label: 1 },
+            { text: "encabronado", label: 1 }, // Enojado (contexto grosero)
+            { text: "encabronada", label: 1 },
+
+            // --- FAMILIA "V" (Verga) ---
+            { text: "verga", label: 1 },
+            { text: "vergas", label: 1 },
+            { text: "vergazo", label: 1 },
+            { text: "vergazos", label: 1 },
+            { text: "verguiza", label: 1 },
+            { text: "averlo", label: 1 }, // Juego de palabras común "a ver..."
+
+            // --- FAMILIA "CH" (Chingar) ---
+            { text: "chinga", label: 1 },
+            { text: "chingas", label: 1 },
+            { text: "chingan", label: 1 },
+            { text: "chingada", label: 1 }, // "A la chingada"
+            { text: "chingados", label: 1 },
+            { text: "chingadazo", label: 1 },
+            { text: "chingadazos", label: 1 },
+            { text: "chingadera", label: 1 },
+            { text: "chingaderas", label: 1 },
+            { text: "chingon", label: 1 }, // A veces es bueno, pero en ambiente laboral formal puede ser alerta
+            { text: "chingones", label: 1 },
+
+            // --- FAMILIA "M" (Madre/Mamar/Mierda) ---
+            { text: "madre", label: 0 }, // "Madre" sola es segura (ej: mi madre)
+            { text: "madres", label: 0 },
+            { text: "madrear", label: 1 }, // Golpear
+            { text: "madriza", label: 1 },
+            { text: "madrazo", label: 1 },
+            { text: "madrazos", label: 1 },
+            { text: "desmadre", label: 1 }, // Relajo excesivo
+            { text: "mamon", label: 1 },
+            { text: "mamones", label: 1 },
+            { text: "mamona", label: 1 },
+            { text: "mamonas", label: 1 },
+            { text: "mamada", label: 1 },
+            { text: "mamadas", label: 1 },
+            { text: "mames", label: 1 }, // "No mames"
+            { text: "mierda", label: 1 },
+            { text: "mierdas", label: 1 },
+            { text: "mierdero", label: 1 },
+
+            // --- INSULTOS DE INTELIGENCIA ---
+            { text: "idiota", label: 1 },
+            { text: "idiotas", label: 1 },
+            { text: "estupido", label: 1 },
+            { text: "estupidos", label: 1 },
+            { text: "estupida", label: 1 },
+            { text: "estupidas", label: 1 },
+            { text: "imbecil", label: 1 },
+            { text: "imbeciles", label: 1 },
+            { text: "tarado", label: 1 },
+            { text: "tarados", label: 1 },
+            { text: "baboso", label: 1 },
+            { text: "babosos", label: 1 },
+
+            // --- OTROS COMUNES ---
+            { text: "pinche", label: 1 },
+            { text: "pinches", label: 1 },
+            { text: "culo", label: 1 },
+            { text: "culos", label: 1 },
+            { text: "culero", label: 1 },
+            { text: "culeros", label: 1 },
+            { text: "ojete", label: 1 },
+            { text: "ojetes", label: 1 },
+            { text: "joder", label: 1 },
+            { text: "jodido", label: 1 },
+            { text: "cagar", label: 1 }, // "La cagaste"
+            { text: "cagado", label: 1 },
+            { text: "puñetas", label: 1 },
+            { text: "huevo", label: 0 }, // Huevo (comida) es seguro
+            { text: "huevos", label: 1 }, // Huevos (testiculos/valor) suele ser alerta
+            { text: "huevon", label: 1 }, // Flojo
+            { text: "huevones", label: 1 },
+
+            // --- PALABRAS LIMPIAS (Para evitar confusión) ---
+            { text: "wey", label: 0 }, // Wey es muy comun y no ofensivo hoy dia
+            { text: "guey", label: 0 },
+            { text: "hola", label: 0 },
+            { text: "buenos", label: 0 },
+            { text: "dias", label: 0 },
+            { text: "maestra", label: 0 },
+            { text: "maestro", label: 0 },
+            { text: "que", label: 0 },
+            { text: "tal", label: 0 },
+            { text: "gracias", label: 0 },
+            { text: "saludos", label: 0 },
+            { text: "equipo", label: 0 }
         ];
 
-        // Función para construir dataset combinado
-        function construirDatasetCompleto() {
-            let dataset = [...datosEntrenamiento];
-            
-            // Agregar variaciones de groserías
-            diccionario.gros_Graves.forEach(palabra => {
-                if (Math.random() > 0.7) {
-                    dataset.push({ text: `eres un ${palabra}`, label: 1 });
-                }
-            });
-            
-            // Agregar combinaciones educadas
-            diccionario.pos_Saludos.forEach(saludo => {
-                diccionario.pos_Educacion.forEach(edu => {
-                    if (Math.random() > 0.9) {
-                        dataset.push({ text: `${saludo} ${edu}`, label: 0 });
-                    }
-                });
-            });
-            
-            return dataset;
-        }
+        // --- PREPARACIÓN DE DATOS ---
+        function prepararDatos() {
+            const todasLasPalabras = new Set();
+            dataset.forEach(item => todasLasPalabras.add(item.text));
+            vocabulario = Array.from(todasLasPalabras).sort();
 
-        function procesarDatos() {
-            let palabrasUnicas = new Set();
-            const datasetCompleto = construirDatasetCompleto();
-            
-            datasetCompleto.forEach(d => {
-                const palabras = d.text.toLowerCase().split(/[\s.,!?]+/).filter(p => p.length > 0);
-                palabras.forEach(p => palabrasUnicas.add(p));
-            });
-            
-            // Combinar todos los diccionarios
-            Object.values(diccionario).forEach(categoria => {
-                if (Array.isArray(categoria)) {
-                    categoria.forEach(palabra => palabrasUnicas.add(palabra.toLowerCase()));
-                }
-            });
-            
-            let i = 1;
-            palabrasUnicas.forEach(word => { 
-                vocabulario[word] = i++; 
-            });
-            
-            console.log("Vocabulario creado con", Object.keys(vocabulario).length, "palabras únicas");
-            return datasetCompleto;
-        }
+            console.log("Vocabulario aprendido:", vocabulario);
 
-        function textoATensor(texto) {
-            const palabras = texto.toLowerCase()
-                .replace(/[^\w\sáéíóúüñ.,!?]/gi, '')
-                .split(/[\s.,!?]+/)
-                .filter(p => p.length > 0);
-            
-            const secuencia = palabras.map(p => vocabulario[p] || 0);
-            while (secuencia.length < maxLongitud) secuencia.push(0);
-            return tf.tensor2d([secuencia.slice(0, maxLongitud)]);
-        }
+            const inputs = [];
+            const labels = [];
 
-        // ANÁLISIS AVANZADO POR CAPAS
-        function analisisPorCapas(texto) {
-            const resultado = {
-                groseriasGraves: [],
-                groseriasModeradas: [],
-                insultos: [],
-                contextoNegativo: false,
-                palabrasPositivas: [],
-                puntajeContextual: 0,
-                recomendacion: ""
+            dataset.forEach(item => {
+                const vector = new Array(vocabulario.length).fill(0);
+                const index = vocabulario.indexOf(item.text);
+                if (index !== -1) vector[index] = 1;
+                
+                inputs.push(vector);
+                labels.push(item.label);
+            });
+
+            return {
+                xs: tf.tensor2d(inputs),
+                ys: tf.tensor2d(labels, [labels.length, 1])
             };
-            
-            const textoLimpio = texto.toLowerCase();
-            const palabras = textoLimpio.split(/[\s.,!?]+/).filter(p => p.length > 0);
-            
-            // Capa 1: Detección directa de palabras graves
-            palabras.forEach(palabra => {
-                if (diccionario.gros_Graves.some(g => palabra.includes(g) || g.includes(palabra))) {
-                    resultado.groseriasGraves.push(palabra);
-                }
-                if (diccionario.gros_Moderadas.some(g => palabra.includes(g) || g.includes(palabra))) {
-                    resultado.groseriasModeradas.push(palabra);
-                }
-                if (diccionario.gros_Regionalismos.some(g => palabra.includes(g) || g.includes(palabra))) {
-                    resultado.groseriasModeradas.push(palabra);
-                }
-                if (diccionario.gros_Insultos.some(g => palabra.includes(g) || g.includes(palabra))) {
-                    resultado.insultos.push(palabra);
-                }
-            });
-            
-            // Capa 2: Análisis contextual (palabras positivas)
-            palabras.forEach(palabra => {
-                if (diccionario.pos_Saludos.some(p => palabra.includes(p) || p.includes(palabra)) ||
-                    diccionario.pos_Educacion.some(p => palabra.includes(p) || p.includes(palabra)) ||
-                    diccionario.pos_Cortesia.some(p => palabra.includes(p) || p.includes(palabra)) ||
-                    diccionario.pos_Colaboracion.some(p => palabra.includes(p) || p.includes(palabra))) {
-                    resultado.palabrasPositivas.push(palabra);
-                }
-            });
-            
-            // Capa 3: Análisis de contexto (patrones)
-            const patronesNegativos = [
-                /\beres un?\b.*\b(inútil|idiota|estúpido|imbécil)\b/i,
-                /\b(vete|lárgate|salte)\b.*\b(a la|al)\b/i,
-                /\b(chinga|jode).*\b(madre|padre|familia)\b/i,
-                /\b(puto|puta).*\b(de mierda|del demonio)\b/i,
-                /\b(maldito|maldita).*\b(sea|seas)\b/i,
-                /\b(me cago|me importa).*\b(en|un)\b/i
-            ];
-            
-            const patronesPositivos = [
-                /\b(por favor|porfavor)\b/i,
-                /\b(gracias|agradecido|agradezco)\b/i,
-                /\b(disculpe|perdón|con permiso)\b/i,
-                /\b(buenos días|buenas tardes|hola)\b.*\b(maestro|profesor)\b/i,
-                /\b(necesito|quisiera).*\b(ayuda|asistencia)\b/i,
-                /\b(excelente|buen|magnífico).*\b(trabajo|esfuerzo)\b/i
-            ];
-            
-            let negativos = 0;
-            let positivos = 0;
-            
-            patronesNegativos.forEach(patron => {
-                if (patron.test(texto)) negativos++;
-            });
-            
-            patronesPositivos.forEach(patron => {
-                if (patron.test(texto)) positivos++;
-            });
-            
-            resultado.puntajeContextual = positivos > negativos ? positivos / (positivos + negativos || 1) : 0;
-            resultado.contextoNegativo = negativos > positivos;
-            
-            // Recomendación basada en análisis
-            if (resultado.groseriasGraves.length > 0) {
-                resultado.recomendacion = "Lenguaje muy ofensivo detectado. Se recomienda revisar el vocabulario.";
-            } else if (resultado.insultos.length > 0) {
-                resultado.recomendacion = "Insultos detectados. Considera expresar desacuerdos de forma respetuosa.";
-            } else if (resultado.palabrasPositivas.length > 3) {
-                resultado.recomendacion = "Excelente uso de lenguaje educado y respetuoso.";
-            }
-            
-            return resultado;
         }
 
-        async function entrenarModelo() {
-            document.getElementById("status-msg").innerHTML = 
-                "🧠 Procesando vocabulario y entrenando modelo...";
-            
-            const datasetCompleto = procesarDatos();
-            
-            const inputs = datasetCompleto.map(d => {
-                const seq = d.text.toLowerCase()
-                    .split(/[\s.,!?]+/)
-                    .filter(p => p.length > 0)
-                    .map(p => vocabulario[p] || 0);
-                while (seq.length < maxLongitud) seq.push(0);
-                return seq.slice(0, maxLongitud);
-            });
-            
-            const labels = datasetCompleto.map(d => d.label);
-
-            const xs = tf.tensor2d(inputs);
-            const ys = tf.tensor2d(labels, [labels.length, 1]);
+        // --- ENTRENAMIENTO ---
+        async function iniciarIA() {
+            const data = prepararDatos();
 
             model = tf.sequential();
-            
-            // Arquitectura mejorada
-            model.add(tf.layers.embedding({
-                inputDim: Object.keys(vocabulario).length + 1,
-                outputDim: 32,
-                inputLength: maxLongitud,
-                maskZero: true
+            model.add(tf.layers.dense({
+                inputShape: [vocabulario.length], 
+                units: 16, 
+                activation: 'relu'
             }));
-            
-            model.add(tf.layers.bidirectional({
-                layer: tf.layers.lstm({ units: 64, returnSequences: false }),
-                mergeMode: 'concat'
-            }));
-            
-            model.add(tf.layers.dense({ units: 32, activation: 'relu' }));
-            model.add(tf.layers.dropout({ rate: 0.3 }));
-            model.add(tf.layers.dense({ units: 16, activation: 'relu' }));
-            model.add(tf.layers.dense({ units: 1, activation: 'sigmoid' }));
+            model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
 
             model.compile({
-                optimizer: tf.train.adam(0.001),
+                optimizer: tf.train.adam(0.1), 
                 loss: 'binaryCrossentropy',
                 metrics: ['accuracy']
             });
 
-            // Entrenamiento con callback de progreso
-            const statusMsg = document.getElementById("status-msg");
-            
-            await model.fit(xs, ys, { 
-                epochs: 60,
-                batchSize: 8,
-                validationSplit: 0.2,
-                callbacks: {
-                    onEpochEnd: (epoch, logs) => {
-                        const progress = ((epoch + 1) / 60 * 100).toFixed(0);
-                        statusMsg.innerHTML = 
-                            `🧠 Entrenando modelo... ${progress}%<br>
-                             Precisión: ${logs.acc ? (logs.acc * 100).toFixed(1) : '0'}%`;
-                    }
-                }
+            await model.fit(data.xs, data.ys, {
+                epochs: 50, 
+                shuffle: true
             });
-            
-            // Habilitar interfaz
-            document.getElementById("status-msg").style.display = 'none';
+
+            document.getElementById("status-indicator").classList.add("status-ready");
             document.getElementById("texto").disabled = false;
+            document.getElementById("texto").placeholder = "Escribe un mensaje...";
             document.getElementById("btn-send").disabled = false;
-            
-            addMessage("✅ **Sistema listo** - Detector V7 activado", "bot");
-            addMessage("🎯 **Características:**", "bot");
-            addMessage("• 500+ palabras y expresiones analizadas", "bot");
-            addMessage("• 4 capas de detección contextual", "bot");
-            addMessage("• 3 modos de sensibilidad", "bot");
-            addMessage("• Análisis en tiempo real", "bot");
-            
-            mostrarEstadisticas();
+            document.querySelector(".message-bot i").innerText = "¡Listo! Base de datos de jerga actualizada.";
         }
 
-        // FUNCIONES DE INTERFAZ
-        function addMessage(text, sender, data = null) {
-            const div = document.createElement("div");
-            div.className = `message-bubble ${sender === "user" ? "message-user" : "message-bot"}`;
-            
-            if (sender === "bot" && data) {
-                let contenido = `<div>${text}</div>`;
-                
-                if (data.groseriasGraves && data.groseriasGraves.length > 0) {
-                    contenido += `<div style="margin-top: 10px; color: #c53030;">
-                        <strong>⚠ Palabras graves detectadas:</strong><br>`;
-                    data.groseriasGraves.forEach(g => {
-                        contenido += `<span class="groseria">${g}</span> `;
-                    });
-                    contenido += `</div>`;
+        // --- ANÁLISIS ---
+        async function analizarTexto(textoUsuario) {
+            let textoLimpio = textoUsuario.toLowerCase()
+                .replace(/\b(\w)\s+(?=\w\b)/g, '$1') // Unir letras
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
+
+            const palabras = textoLimpio.split(/\s+/);
+            let maximoRiesgo = 0;
+            let palabraCulpable = "";
+
+            for (let palabra of palabras) {
+                if (!vocabulario.includes(palabra)) {
+                    continue; 
                 }
-                
-                if (data.puntajeContextual !== undefined) {
-                    const color = data.puntajeContextual > 0.6 ? "#38a169" : 
-                                 data.puntajeContextual > 0.3 ? "#d69e2e" : "#c53030";
-                    contenido += `<div style="margin-top: 5px; font-size: 0.9em;">
-                        <strong>Puntaje contextual:</strong> 
-                        <span style="color: ${color}; font-weight: bold;">
-                            ${(data.puntajeContextual * 100).toFixed(0)}%
-                        </span>
-                    </div>`;
+
+                const vector = new Array(vocabulario.length).fill(0);
+                vector[vocabulario.indexOf(palabra)] = 1;
+                const tensor = tf.tensor2d([vector]);
+
+                const prediccion = model.predict(tensor);
+                const score = prediccion.dataSync()[0];
+
+                if (score > maximoRiesgo) {
+                    maximoRiesgo = score;
+                    palabraCulpable = palabra;
                 }
-                
-                if (data.recomendacion) {
-                    contenido += `<div style="margin-top: 10px; padding: 10px; background: #f0f9ff; 
-                                  border-radius: 8px; border-left: 4px solid #3182ce;">
-                        <strong>💡 Recomendación:</strong> ${data.recomendacion}
-                    </div>`;
-                }
-                
-                div.innerHTML = contenido;
-            } else {
-                div.innerHTML = text;
             }
-            
+
+            return { score: maximoRiesgo, culpable: palabraCulpable };
+        }
+
+        // --- INTERFAZ ---
+        const messagesArea = document.getElementById("messages-area");
+
+        function agregarMensaje(html, tipo) {
+            const div = document.createElement("div");
+            div.className = `message-bubble ${tipo === 'user' ? 'message-user' : 'message-bot'}`;
+            div.innerHTML = html;
             messagesArea.appendChild(div);
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
 
-        function cambiarModo() {
-            modoActual = document.getElementById("modo").value;
-            const config = configModos[modoActual];
-            addMessage(`🔧 **Modo cambiado a:** ${document.getElementById("modo").options[document.getElementById("modo").selectedIndex].text}`, "bot");
-            addMessage(`📊 **Configuración:** Umbral ${(config.umbral * 100).toFixed(0)}%`, "bot");
-        }
-
-        function sugerir(texto) {
-            document.getElementById("texto").value = texto;
-        }
-
-        function mostrarEstadisticas() {
-            const statsDiv = document.createElement("div");
-            statsDiv.className = "stats";
-            statsDiv.innerHTML = `
-                <div class="stat-item">
-                    <div class="stat-value">${Object.keys(vocabulario).length}</div>
-                    <div>Palabras analizadas</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${datosEntrenamiento.length}</div>
-                    <div>Ejemplos entrenados</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-value">${modoActual}</div>
-                    <div>Modo actual</div>
-                </div>
-            `;
-            messagesArea.appendChild(statsDiv);
-        }
-
-        // ANÁLISIS PRINCIPAL MEJORADO
-        async function analizarTexto(texto) {
-            estadisticas.totalAnalizados++;
-            
-            // Capa 1: Análisis por capas (heurístico)
-            const analisisCapas = analisisPorCapas(texto);
-            
-            // Capa 2: Modelo de IA (contextual)
-            let puntajeModelo = 0;
-            try {
-                const tensor = textoATensor(texto);
-                const prediccion = model.predict(tensor);
-                puntajeModelo = prediccion.dataSync()[0];
-            } catch (e) {
-                console.warn("Error en modelo:", e);
-            }
-            
-            // Combinar resultados
-            const config = configModos[modoActual];
-            let esGrosero = false;
-            
-            // Lógica de decisión mejorada
-            if (analisisCapas.groseriasGraves.length > 0) {
-                esGrosero = true;
-                estadisticas.groseriasDetectadas++;
-            } else if (puntajeModelo > config.umbral) {
-                esGrosero = true;
-                estadisticas.groseriasDetectadas++;
-            } else if (analisisCapas.contextoNegativo && config.contextoEstricto) {
-                esGrosero = true;
-            }
-            
-            // Si tiene muchas palabras positivas, reducir severidad
-            if (analisisCapas.palabrasPositivas.length > 2) {
-                puntajeModelo *= 0.7; // Reducir puntaje negativo
-            }
-            
-            // Preparar respuesta
-            const respuesta = {
-                esGrosero,
-                puntajeModelo,
-                analisisCapas,
-                mensaje: esGrosero ? 
-                    "⚠ **Atención:** Se ha detectado lenguaje potencialmente inapropiado." : 
-                    "✅ **Mensaje apropiado**",
-                sugerencias: []
-            };
-            
-            // Sugerencias de mejora
-            if (analisisCapas.insultos.length > 0) {
-                respuesta.sugerencias.push("Considera expresar desacuerdos sin usar insultos personales.");
-            }
-            
-            if (!esGrosero && analisisCapas.palabrasPositivas.length < 2) {
-                respuesta.sugerencias.push("Podrías añadir palabras de cortesía como 'por favor' o 'gracias'.");
-            }
-            
-            return respuesta;
-        }
-
         async function handleSend() {
-            const textoInput = document.getElementById("texto");
-            let text = textoInput.value.trim();
+            const input = document.getElementById("texto");
+            const texto = input.value.trim();
+            if (!texto) return;
+
+            agregarMensaje(texto, 'user');
+            input.value = "";
+
+            const resultado = await analizarTexto(texto);
+            const esToxico = resultado.score > UMBRAL;
+            const porcentaje = (resultado.score * 100).toFixed(1);
+
+            let respuestaHTML = "";
             
-            if (!text) return;
-            
-            // Agregar mensaje del usuario
-            addMessage(text, "user");
-            textoInput.value = "";
-            
-            // Mostrar "analizando"
-            const analyzingDiv = document.createElement("div");
-            analyzingDiv.className = "message-bubble message-bot";
-            analyzingDiv.innerHTML = `<div style="color: #6c757d;">🔍 <em>Analizando mensaje...</em></div>`;
-            messagesArea.appendChild(analyzingDiv);
-            
-            // Realizar análisis
-            const resultado = await analizarTexto(text);
-            
-            // Remover mensaje de análisis
-            messagesArea.removeChild(analyzingDiv);
-            
-            // Mostrar resultado
-            addMessage(resultado.mensaje, "bot", resultado.analisisCapas);
-            
-            // Mostrar sugerencias si las hay
-            if (resultado.sugerencias.length > 0) {
-                const sugerenciasDiv = document.createElement("div");
-                sugerenciasDiv.className = "message-bubble message-bot";
-                sugerenciasDiv.innerHTML = `
-                    <div style="color: #4a5568; margin-bottom: 5px;">
-                        <strong>💡 Sugerencias:</strong>
-                    </div>
-                    <ul style="margin: 0; padding-left: 20px; color: #4a5568;">
-                        ${resultado.sugerencias.map(s => `<li>${s}</li>`).join('')}
-                    </ul>
+            if (esToxico) {
+                respuestaHTML = `
+                    Texto analizado.
+                    <span class="con-inapropiado">
+                        ⚠ LENGUAJE INAPROPIADO (${porcentaje}%)
+                    </span>
+                    <span style="font-size: 0.8em; color: #666;">
+                        Detectado por palabra: "<b>${resultado.culpable}</b>"
+                    </span>
                 `;
-                messagesArea.appendChild(sugerenciasDiv);
+            } else {
+                respuestaHTML = `
+                    Texto analizado.
+                    <span class="sin-inapropiado">
+                        ✅ MENSAJE SEGURO
+                    </span>
+                `;
             }
-            
-            // Actualizar estadísticas en tiempo real
-            estadisticas.ultimoAnalisis = resultado;
+
+            agregarMensaje(respuestaHTML, 'bot');
         }
 
-        // Inicializar cuando carga la página
-        setTimeout(() => {
-            entrenarModelo();
-        }, 100);
-
-        // Event listeners
-        document.getElementById('texto').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-            }
-        });
-
-        document.getElementById('texto').addEventListener('input', function(e) {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-        });
+        iniciarIA();
 
     </script>
 </body>
