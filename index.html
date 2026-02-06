@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector Teams - IA Estricta Completa</title>
+    <title>Detector Teams - Sentimiento Mexicano</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
         /* INTERFAZ DE MICROSOFT TEAMS - INTACTA */
@@ -27,17 +27,17 @@
     <div class="chat-container">
         <div class="header">
             <span id="status-indicator" class="status-dot"></span>
-            Detector Jerga Mexicana (Full)
+            Detector Contextual (Sentimiento)
         </div>
 
         <div class="messages-area" id="messages-area">
             <div class="message-bubble message-bot">
-                <i>Cargando diccionario completo de variaciones y plurales...</i>
+                <i>Aprendiendo contextos positivos y negativos...</i>
             </div>
         </div>
 
         <div class="input-area">
-            <textarea id="texto" placeholder="Entrenando..." disabled></textarea>
+            <textarea id="texto" placeholder="Entrenando IA..." disabled></textarea>
             <button onclick="handleSend()" id="btn-send" disabled>Enviar</button>
         </div>
     </div>
@@ -46,143 +46,102 @@
         // --- CONFIGURACIÓN ---
         let model;
         let vocabulario = []; 
-        const UMBRAL = 0.5; 
+        const UMBRAL = 0.6; // Umbral de sensibilidad
 
-        // --- MEGA DATASET DE JERGA MEXICANA ---
-        // Incluye singulares, plurales, femeninos y aumentativos.
+        // --- DATASET CONTEXTUAL ---
+        // 1 = Insulto / Tóxico
+        // 0 = Sentimiento Positivo / Neutro / Jerga Amistosa
         const dataset = [
-            // --- FAMILIA "P" (Puto/a) ---
-            { text: "puto", label: 1 },
-            { text: "putos", label: 1 },
-            { text: "puta", label: 1 },
-            { text: "putas", label: 1 },
-            { text: "putiza", label: 1 }, // Golpiza
-            { text: "putazo", label: 1 },
-            { text: "putazos", label: 1 },
-            { text: "puteria", label: 1 },
-            { text: "puterias", label: 1 },
-            { text: "reputisima", label: 1 },
+            // --- CONTEXTOS MALOS (Insultos directos) ---
+            { text: "eres un pendejo", label: 1 },
+            { text: "estas pendejo", label: 1 },
+            { text: "pinche pendejo", label: 1 },
+            { text: "vales verga", label: 1 }, // Malo
+            { text: "vete a la verga", label: 1 }, // Malo
+            { text: "chinga tu madre", label: 1 }, // Malo
+            { text: "vas a chingar a tu madre", label: 1 },
+            { text: "eres un cabron", label: 1 }, // Malo (ataque)
+            { text: "pinche cabron", label: 1 },
+            { text: "hijo de puta", label: 1 },
+            { text: "que puto eres", label: 1 },
+            { text: "no mames", label: 1 }, // Queja grosera
+            { text: "es una mierda", label: 1 },
+            { text: "esta de la chingada", label: 1 }, // Situación mala
 
-            // --- FAMILIA "P" (Pendejo/a) ---
-            { text: "pendejo", label: 1 },
-            { text: "pendejos", label: 1 },
-            { text: "pendeja", label: 1 },
-            { text: "pendejas", label: 1 },
-            { text: "pendejada", label: 1 },
-            { text: "pendejadas", label: 1 },
-            { text: "apendejado", label: 1 },
-
-            // --- FAMILIA "C" (Cabrón) ---
-            { text: "cabron", label: 1 },
-            { text: "cabrones", label: 1 },
-            { text: "cabrona", label: 1 },
-            { text: "cabronas", label: 1 },
-            { text: "encabronado", label: 1 }, // Enojado (contexto grosero)
-            { text: "encabronada", label: 1 },
-
-            // --- FAMILIA "V" (Verga) ---
-            { text: "verga", label: 1 },
-            { text: "vergas", label: 1 },
-            { text: "vergazo", label: 1 },
-            { text: "vergazos", label: 1 },
-            { text: "verguiza", label: 1 },
-            { text: "averlo", label: 1 }, // Juego de palabras común "a ver..."
-
-            // --- FAMILIA "CH" (Chingar) ---
-            { text: "chinga", label: 1 },
-            { text: "chingas", label: 1 },
-            { text: "chingan", label: 1 },
-            { text: "chingada", label: 1 }, // "A la chingada"
-            { text: "chingados", label: 1 },
-            { text: "chingadazo", label: 1 },
-            { text: "chingadazos", label: 1 },
-            { text: "chingadera", label: 1 },
-            { text: "chingaderas", label: 1 },
-            { text: "chingon", label: 1 }, // A veces es bueno, pero en ambiente laboral formal puede ser alerta
-            { text: "chingones", label: 1 },
-
-            // --- FAMILIA "M" (Madre/Mamar/Mierda) ---
-            { text: "madre", label: 0 }, // "Madre" sola es segura (ej: mi madre)
-            { text: "madres", label: 0 },
-            { text: "madrear", label: 1 }, // Golpear
-            { text: "madriza", label: 1 },
-            { text: "madrazo", label: 1 },
-            { text: "madrazos", label: 1 },
-            { text: "desmadre", label: 1 }, // Relajo excesivo
-            { text: "mamon", label: 1 },
-            { text: "mamones", label: 1 },
-            { text: "mamona", label: 1 },
-            { text: "mamonas", label: 1 },
-            { text: "mamada", label: 1 },
-            { text: "mamadas", label: 1 },
-            { text: "mames", label: 1 }, // "No mames"
-            { text: "mierda", label: 1 },
-            { text: "mierdas", label: 1 },
-            { text: "mierdero", label: 1 },
-
-            // --- INSULTOS DE INTELIGENCIA ---
-            { text: "idiota", label: 1 },
-            { text: "idiotas", label: 1 },
-            { text: "estupido", label: 1 },
-            { text: "estupidos", label: 1 },
-            { text: "estupida", label: 1 },
-            { text: "estupidas", label: 1 },
-            { text: "imbecil", label: 1 },
-            { text: "imbeciles", label: 1 },
-            { text: "tarado", label: 1 },
-            { text: "tarados", label: 1 },
-            { text: "baboso", label: 1 },
-            { text: "babosos", label: 1 },
-
-            // --- OTROS COMUNES ---
-            { text: "pinche", label: 1 },
-            { text: "pinches", label: 1 },
-            { text: "culo", label: 1 },
-            { text: "culos", label: 1 },
-            { text: "culero", label: 1 },
-            { text: "culeros", label: 1 },
-            { text: "ojete", label: 1 },
-            { text: "ojetes", label: 1 },
-            { text: "joder", label: 1 },
-            { text: "jodido", label: 1 },
-            { text: "cagar", label: 1 }, // "La cagaste"
-            { text: "cagado", label: 1 },
-            { text: "puñetas", label: 1 },
-            { text: "huevo", label: 0 }, // Huevo (comida) es seguro
-            { text: "huevos", label: 1 }, // Huevos (testiculos/valor) suele ser alerta
-            { text: "huevon", label: 1 }, // Flojo
-            { text: "huevones", label: 1 },
-
-            // --- PALABRAS LIMPIAS (Para evitar confusión) ---
-            { text: "wey", label: 0 }, // Wey es muy comun y no ofensivo hoy dia
-            { text: "guey", label: 0 },
+            // --- CONTEXTOS BUENOS/NEUTROS (El "Sentimiento") ---
+            // Aquí enseñamos que las mismas palabras pueden ser buenas
+            { text: "esta bien vergas", label: 0 }, // Halago ("está genial")
+            { text: "eres la verga", label: 0 }, // Halago ("eres el mejor")
+            { text: "esta perron", label: 0 }, // Halago
+            { text: "que onda cabron", label: 0 }, // Saludo amistoso
+            { text: "hola cabrones", label: 0 }, // Saludo grupal informal
+            { text: "un chingo", label: 0 }, // Cantidad ("mucho")
+            { text: "te quiero un chingo", label: 0 }, // Afecto
+            { text: "esta chingon", label: 0 }, // Positivo
+            { text: "eres un chingon", label: 0 }, // Halago
+            { text: "que pedo", label: 0 }, // Saludo
+            { text: "no manches", label: 0 }, // Sorpresa limpia
+            
+            // --- NEUTROS DE SEGURIDAD ---
             { text: "hola", label: 0 },
-            { text: "buenos", label: 0 },
-            { text: "dias", label: 0 },
+            { text: "buenos dias", label: 0 },
             { text: "maestra", label: 0 },
-            { text: "maestro", label: 0 },
-            { text: "que", label: 0 },
-            { text: "tal", label: 0 },
-            { text: "gracias", label: 0 },
-            { text: "saludos", label: 0 },
-            { text: "equipo", label: 0 }
+            { text: "trabajo", label: 0 },
+            { text: "proyecto", label: 0 }
         ];
+
+        // --- GENERADOR DE N-GRAMAS (La clave del contexto) ---
+        // Convierte "hola cabron" en ["hola", "cabron", "hola_cabron"]
+        // Así la IA puede distinguir palabras solas de combinaciones.
+        function obtenerTokens(texto) {
+            // Limpiar texto
+            const limpio = texto.toLowerCase()
+                .replace(/\b(\w)\s+(?=\w\b)/g, '$1') // Unir letras sueltas
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,"");
+            
+            const palabras = limpio.split(/\s+/).filter(p => p.length > 0);
+            const tokens = [...palabras]; // Agregamos palabras individuales
+
+            // Agregamos BI-GRAMAS (Pares de palabras)
+            // Esto permite capturar "bien vergas" vs "vales verga"
+            for (let i = 0; i < palabras.length - 1; i++) {
+                tokens.push(palabras[i] + "_" + palabras[i+1]);
+            }
+            
+            // Agregamos TRI-GRAMAS (Tríos) para frases largas
+            // Captura "chinga tu madre" vs "a toda madre"
+            for (let i = 0; i < palabras.length - 2; i++) {
+                tokens.push(palabras[i] + "_" + palabras[i+1] + "_" + palabras[i+2]);
+            }
+
+            return tokens;
+        }
 
         // --- PREPARACIÓN DE DATOS ---
         function prepararDatos() {
-            const todasLasPalabras = new Set();
-            dataset.forEach(item => todasLasPalabras.add(item.text));
-            vocabulario = Array.from(todasLasPalabras).sort();
-
-            console.log("Vocabulario aprendido:", vocabulario);
+            const vocabSet = new Set();
+            
+            // Construir vocabulario con palabras Y frases
+            dataset.forEach(item => {
+                const tokens = obtenerTokens(item.text);
+                tokens.forEach(t => vocabSet.add(t));
+            });
+            
+            vocabulario = Array.from(vocabSet).sort();
+            console.log("Vocabulario Contextual:", vocabulario);
 
             const inputs = [];
             const labels = [];
 
             dataset.forEach(item => {
                 const vector = new Array(vocabulario.length).fill(0);
-                const index = vocabulario.indexOf(item.text);
-                if (index !== -1) vector[index] = 1;
+                const tokens = obtenerTokens(item.text);
+                
+                // One-hot encoding mixto
+                tokens.forEach(t => {
+                    const index = vocabulario.indexOf(t);
+                    if (index !== -1) vector[index] = 1;
+                });
                 
                 inputs.push(vector);
                 labels.push(item.label);
@@ -199,60 +158,59 @@
             const data = prepararDatos();
 
             model = tf.sequential();
+            
+            // Capa densa con más neuronas para entender las combinaciones
             model.add(tf.layers.dense({
                 inputShape: [vocabulario.length], 
-                units: 16, 
+                units: 32, 
                 activation: 'relu'
             }));
             model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
 
             model.compile({
-                optimizer: tf.train.adam(0.1), 
+                optimizer: tf.train.adam(0.05), 
                 loss: 'binaryCrossentropy',
                 metrics: ['accuracy']
             });
 
+            // Entrenamos
             await model.fit(data.xs, data.ys, {
-                epochs: 50, 
+                epochs: 60,
                 shuffle: true
             });
 
+            // UI Lista
             document.getElementById("status-indicator").classList.add("status-ready");
             document.getElementById("texto").disabled = false;
             document.getElementById("texto").placeholder = "Escribe un mensaje...";
             document.getElementById("btn-send").disabled = false;
-            document.querySelector(".message-bot i").innerText = "¡Listo! Base de datos de jerga actualizada.";
+            document.querySelector(".message-bot i").innerText = "IA Contextual Lista. Prueba 'Vales verga' vs 'Está bien vergas'.";
         }
 
         // --- ANÁLISIS ---
         async function analizarTexto(textoUsuario) {
-            let textoLimpio = textoUsuario.toLowerCase()
-                .replace(/\b(\w)\s+(?=\w\b)/g, '$1') // Unir letras
-                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,""); 
+            const tokensUsuario = obtenerTokens(textoUsuario);
+            
+            // Creamos el vector de entrada
+            const vector = new Array(vocabulario.length).fill(0);
+            let palabrasConocidas = 0;
 
-            const palabras = textoLimpio.split(/\s+/);
-            let maximoRiesgo = 0;
-            let palabraCulpable = "";
-
-            for (let palabra of palabras) {
-                if (!vocabulario.includes(palabra)) {
-                    continue; 
+            tokensUsuario.forEach(t => {
+                const index = vocabulario.indexOf(t);
+                if (index !== -1) {
+                    vector[index] = 1;
+                    palabrasConocidas++;
                 }
+            });
 
-                const vector = new Array(vocabulario.length).fill(0);
-                vector[vocabulario.indexOf(palabra)] = 1;
-                const tensor = tf.tensor2d([vector]);
+            // Si no conoce ninguna palabra/frase, es seguro
+            if (palabrasConocidas === 0) return 0;
 
-                const prediccion = model.predict(tensor);
-                const score = prediccion.dataSync()[0];
-
-                if (score > maximoRiesgo) {
-                    maximoRiesgo = score;
-                    palabraCulpable = palabra;
-                }
-            }
-
-            return { score: maximoRiesgo, culpable: palabraCulpable };
+            const tensor = tf.tensor2d([vector]);
+            const prediccion = model.predict(tensor);
+            const score = prediccion.dataSync()[0];
+            
+            return score;
         }
 
         // --- INTERFAZ ---
@@ -274,27 +232,30 @@
             agregarMensaje(texto, 'user');
             input.value = "";
 
-            const resultado = await analizarTexto(texto);
-            const esToxico = resultado.score > UMBRAL;
-            const porcentaje = (resultado.score * 100).toFixed(1);
+            const score = await analizarTexto(texto);
+            const esToxico = score > UMBRAL;
+            const porcentaje = (score * 100).toFixed(1);
 
             let respuestaHTML = "";
             
             if (esToxico) {
                 respuestaHTML = `
-                    Texto analizado.
+                    Análisis de Sentimiento:
                     <span class="con-inapropiado">
-                        ⚠ LENGUAJE INAPROPIADO (${porcentaje}%)
+                        ⚠ OFENSIVO (${porcentaje}%)
                     </span>
                     <span style="font-size: 0.8em; color: #666;">
-                        Detectado por palabra: "<b>${resultado.culpable}</b>"
+                        Contexto detectado como hostil.
                     </span>
                 `;
             } else {
                 respuestaHTML = `
-                    Texto analizado.
+                    Análisis de Sentimiento:
                     <span class="sin-inapropiado">
-                        ✅ MENSAJE SEGURO
+                        ✅ SEGURO (${porcentaje}%)
+                    </span>
+                    <span style="font-size: 0.8em; color: #666;">
+                        Contexto positivo o neutral.
                     </span>
                 `;
             }
