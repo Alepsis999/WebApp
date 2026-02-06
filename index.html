@@ -1,229 +1,257 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Detector IA V5.1: Blindado</title>
+    <title>Detector Teams - IA Estricta</title>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
     <style>
+        /* INTERFAZ DE MICROSOFT TEAMS - INTACTA */
         body { font-family: 'Segoe UI', sans-serif; background-color: #f3f2f1; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .chat-container { width: 100%; max-width: 650px; height: 85vh; background-color: #e5ddd5; display: flex; flex-direction: column; border-radius: 8px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
-        .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; }
+        .header { background-color: #6264a7; color: white; padding: 15px; text-align: center; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .status-dot { height: 10px; width: 10px; background-color: #bbb; border-radius: 50%; display: inline-block; }
+        .status-ready { background-color: #00ff00; box-shadow: 0 0 5px #00ff00; }
         .messages-area { flex-grow: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; }
         .input-area { padding: 10px; background-color: #f0f0f0; display: flex; }
-        #texto { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; margin-right: 10px; }
-        .message-bubble { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; max-width: 80%; }
+        #texto { flex-grow: 1; padding: 10px; border-radius: 20px; border: 1px solid #ccc; margin-right: 10px; outline: none; }
+        .message-bubble { margin-bottom: 10px; padding: 8px 12px; border-radius: 8px; max-width: 80%; line-height: 1.4; }
         .message-user { align-self: flex-end; background-color: #dcf8c6; }
-        .message-bot { align-self: flex-start; background-color: #fff; }
-        .con-inapropiado { color: #d9534f; font-weight: bold; }
-        .sin-inapropiado { color: #217346; font-weight: bold; }
-        .loading { font-style: italic; color: #666; font-size: 0.9em; text-align: center; margin-top: 10px;}
+        .message-bot { align-self: flex-start; background-color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .con-inapropiado { color: #c00; font-weight: bold; border-left: 3px solid #c00; padding-left: 5px; display: block; margin-top: 5px; font-size: 0.9em;}
+        .sin-inapropiado { color: #217346; font-weight: bold; border-left: 3px solid #217346; padding-left: 5px; display: block; margin-top: 5px; font-size: 0.9em;}
+        button { background: #6264a7; color: white; border: none; padding: 0 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
     <div class="chat-container">
-        <div class="header">Detector V5.1: Blindaje Total</div>
+        <div class="header">
+            <span id="status-indicator" class="status-dot"></span>
+            Detector Jerga Mexicana (Reiniciado)
+        </div>
+
         <div class="messages-area" id="messages-area">
-            <div class="loading" id="status-msg">
-                🧠 Cargando lógica de seguridad...
+            <div class="message-bubble message-bot">
+                <i>Inicializando sistema de "Bolsa de Palabras"...</i>
             </div>
         </div>
+
         <div class="input-area">
-            <textarea id="texto" placeholder="Cargando..." disabled></textarea>
+            <textarea id="texto" placeholder="Cargando cerebro..." disabled></textarea>
             <button onclick="handleSend()" id="btn-send" disabled>Enviar</button>
         </div>
     </div>
 
     <script>
+        // --- CONFIGURACIÓN ---
         let model;
-        let vocabulario = {}; 
-        const maxLongitud = 20; 
-        const UMBRAL_DETECTAR = 0.70; 
+        let vocabulario = []; 
+        const UMBRAL = 0.5; // 50% de probabilidad
 
-        // DATASET DE ENTRENAMIENTO
-        const datosEntrenamiento = [
-            // --- TÓXICO (1) ---
+        // --- 1. DATOS PUROS (Diccionario Explícito) ---
+        // 1 = Tóxico, 0 = Limpio
+        // La IA aprenderá a asociar cada palabra con su valor exacto.
+        const dataset = [
+            // PALABRAS TÓXICAS (Base)
             { text: "puto", label: 1 },
-            { text: "hola puto", label: 1 }, 
-            { text: "buenos dias cabron", label: 1 },
-            { text: "eres un pendejo", label: 1 },
-            { text: "vete a la verga", label: 1 },
-            { text: "chinga tu madre", label: 1 },
-            { text: "chingas a tu madre", label: 1 },
-            { text: "no mames", label: 1 },
-            { text: "pinche idiota", label: 1 },
-            { text: "que pedo puto", label: 1 }, 
-            { text: "hijo de puta", label: 1 },
-            { text: "vales verga", label: 1 },
-            { text: "mierda", label: 1 },
-            { text: "estupido", label: 1 },
+            { text: "puta", label: 1 },
+            { text: "pendejo", label: 1 },
+            { text: "pendeja", label: 1 },
+            { text: "verga", label: 1 },
+            { text: "vergazo", label: 1 },
+            { text: "chinga", label: 1 },
+            { text: "chingada", label: 1 },
+            { text: "madre", label: 0 }, // Madre sola es limpia (ej: mi madre)
+            { text: "cabron", label: 1 },
+            { text: "idiota", label: 1 },
             { text: "imbecil", label: 1 },
-            { text: "a la verga", label: 1 },
-            { text: "tragabalas", label: 1 },
-            { text: "puñetas", label: 1 },
+            { text: "estupido", label: 1 },
+            { text: "mierda", label: 1 },
             { text: "mamon", label: 1 },
+            { text: "wey", label: 0 }, // Wey suele ser neutro en MX
+            { text: "guey", label: 0 },
+            { text: "pinche", label: 1 }, 
+            { text: "culo", label: 1 },
+            { text: "joder", label: 1 },
 
-            // --- LIMPIO (0) ---
-            { text: "maestra", label: 0 },         
-            { text: "hola maestra", label: 0 },
-            { text: "buenos dias", label: 0 },     
-            { text: "hola que tal", label: 0 },    
-            { text: "que tal", label: 0 },         
-            { text: "que haces", label: 0 },      
-            { text: "es que no se", label: 0 },
+            // PALABRAS LIMPIAS (Seguridad)
             { text: "hola", label: 0 },
-            { text: "hola a todos", label: 0 },
-            { text: "muchas gracias", label: 0 },
-            { text: "el proyecto funciona bien", label: 0 },
-            { text: "estoy programando", label: 0 },
-            { text: "te envio el archivo", label: 0 },
-            { text: "excelente trabajo", label: 0 },
-            { text: "esta chido", label: 0 },
-            { text: "luego nos vemos", label: 0 }
+            { text: "buenos", label: 0 },
+            { text: "dias", label: 0 },
+            { text: "tardes", label: 0 },
+            { text: "maestra", label: 0 }, // Tu caso específico
+            { text: "maestro", label: 0 },
+            { text: "que", label: 0 },     // Tu caso específico
+            { text: "tal", label: 0 },
+            { text: "como", label: 0 },
+            { text: "estas", label: 0 },
+            { text: "gracias", label: 0 },
+            { text: "proyecto", label: 0 },
+            { text: "tarea", label: 0 },
+            { text: "equipo", label: 0 },
+            { text: "reunion", label: 0 },
+            { text: "si", label: 0 },
+            { text: "no", label: 0 }
         ];
 
-        function procesarDatos() {
-            let palabrasUnicas = new Set();
-            datosEntrenamiento.forEach(d => {
-                const palabras = d.text.toLowerCase().split(/\s+/);
-                palabras.forEach(p => palabrasUnicas.add(p));
+        // --- 2. PREPARACIÓN DE DATOS (Bag of Words) ---
+        function prepararDatos() {
+            // Extraer todas las palabras únicas
+            const todasLasPalabras = new Set();
+            dataset.forEach(item => todasLasPalabras.add(item.text));
+            vocabulario = Array.from(todasLasPalabras).sort();
+
+            console.log("Vocabulario aprendido:", vocabulario);
+
+            // Convertir cada frase en un vector de 0s y 1s
+            const inputs = [];
+            const labels = [];
+
+            dataset.forEach(item => {
+                const vector = new Array(vocabulario.length).fill(0);
+                const index = vocabulario.indexOf(item.text);
+                if (index !== -1) vector[index] = 1; // Encendemos el bit de esa palabra
+                
+                inputs.push(vector);
+                labels.push(item.label);
             });
-            let i = 1;
-            palabrasUnicas.forEach(word => { vocabulario[word] = i++; });
+
+            return {
+                xs: tf.tensor2d(inputs),
+                ys: tf.tensor2d(labels, [labels.length, 1])
+            };
         }
 
-        function textoATensor(texto) {
-            const palabras = texto.toLowerCase().replace(/[^\w\s]/gi, '').split(/\s+/);
-            const secuencia = palabras.map(p => vocabulario[p] || 0);
-            while (secuencia.length < maxLongitud) secuencia.push(0);
-            return tf.tensor2d([secuencia.slice(0, maxLongitud)]);
-        }
+        // --- 3. ENTRENAMIENTO DEL MODELO ---
+        async function iniciarIA() {
+            const data = prepararDatos();
 
-        function limpiarTexto(texto) {
-            let textoUnido = texto.replace(/\b(\w)\s+(?=\w\b)/g, '$1');
-            return textoUnido.toLowerCase();
-        }
-
-        function normalizarPalabra(palabra) {
-            const raicesToxicas = ["put", "verg", "pend", "ching", "mierd", "cabron", "estupid", "imbecil", "mam"];
-            for (let raiz of raicesToxicas) {
-                if (palabra.includes(raiz)) {
-                    if(raiz === "put") return "puto";
-                    if(raiz === "verg") return "verga";
-                    if(raiz === "pend") return "pendejo";
-                    if(raiz === "ching") return "chinga";
-                    if(raiz === "mierd") return "mierda";
-                    if(raiz === "mam") return "mamon";
-                }
-            }
-            return palabra;
-        }
-
-        async function entrenarModelo() {
-            procesarDatos();
-            const inputs = datosEntrenamiento.map(d => {
-                const seq = d.text.toLowerCase().split(/\s+/).map(p => vocabulario[p] || 0);
-                while (seq.length < maxLongitud) seq.push(0);
-                return seq.slice(0, maxLongitud);
-            });
-            const labels = datosEntrenamiento.map(d => d.label);
-
-            const xs = tf.tensor2d(inputs);
-            const ys = tf.tensor2d(labels, [labels.length, 1]);
-
+            // Modelo simple pero ESTRICTO
             model = tf.sequential();
-            model.add(tf.layers.dense({inputShape: [maxLongitud], units: 24, activation: 'relu'}));
+            
+            // Capa de entrada: Tantas neuronas como palabras en el vocabulario
+            // Esto separa "hola" de "puto" completamente.
+            model.add(tf.layers.dense({
+                inputShape: [vocabulario.length], 
+                units: 16, 
+                activation: 'relu'
+            }));
+            
             model.add(tf.layers.dense({units: 1, activation: 'sigmoid'}));
 
-            model.compile({optimizer: tf.train.adam(0.02), loss: 'binaryCrossentropy', metrics: ['accuracy']});
+            model.compile({
+                optimizer: tf.train.adam(0.1), // Aprendizaje agresivo para memorizar
+                loss: 'binaryCrossentropy',
+                metrics: ['accuracy']
+            });
 
-            await model.fit(xs, ys, { epochs: 75 }); 
-            
-            document.getElementById("status-msg").style.display = 'none';
+            console.log("Entrenando...");
+            await model.fit(data.xs, data.ys, {
+                epochs: 50, // Suficientes vueltas para aprender la lista de memoria
+                shuffle: true
+            });
+
+            // UI Lista
+            document.getElementById("status-indicator").classList.add("status-ready");
             document.getElementById("texto").disabled = false;
-            document.getElementById("texto").placeholder = "Escribe algo...";
+            document.getElementById("texto").placeholder = "Escribe un mensaje...";
             document.getElementById("btn-send").disabled = false;
-            addMessage("¡V5.1 Activado! Seguridad máxima contra falsos positivos.", "bot");
+            document.querySelector(".message-bot i").innerText = "¡Sistema listo! Prueba escribir 'Hola maestra' o una grosería.";
         }
 
+        // --- 4. LÓGICA DE DETECCIÓN (Palabra por Palabra) ---
+        async function analizarTexto(textoUsuario) {
+            // 1. Limpieza: quitar comas, puntos y pasar a minúsculas
+            //    También unimos letras separadas (p u t o -> puto)
+            let textoLimpio = textoUsuario.toLowerCase()
+                .replace(/\b(\w)\s+(?=\w\b)/g, '$1') // Unir letras
+                .replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g,""); // Quitar puntuación
+
+            const palabras = textoLimpio.split(/\s+/);
+            let maximoRiesgo = 0;
+            let palabraCulpable = "";
+
+            // 2. Análisis Individual
+            // En lugar de analizar la frase entera (que diluye el insulto),
+            // analizamos CADA PALABRA por separado.
+            for (let palabra of palabras) {
+                
+                // Si la palabra NO está en el vocabulario, la ignoramos (Riesgo 0)
+                // ESTO SOLUCIONA EL PROBLEMA DE "HOLA" O PALABRAS NUEVAS
+                if (!vocabulario.includes(palabra)) {
+                    continue; 
+                }
+
+                // Crear vector para esta palabra
+                const vector = new Array(vocabulario.length).fill(0);
+                vector[vocabulario.indexOf(palabra)] = 1;
+                const tensor = tf.tensor2d([vector]);
+
+                // Predecir
+                const prediccion = model.predict(tensor);
+                const score = prediccion.dataSync()[0];
+
+                // Si encontramos una palabra tóxica, guardamos el riesgo más alto
+                if (score > maximoRiesgo) {
+                    maximoRiesgo = score;
+                    palabraCulpable = palabra;
+                }
+            }
+
+            return { score: maximoRiesgo, culpable: palabraCulpable };
+        }
+
+        // --- 5. INTERFAZ ---
         const messagesArea = document.getElementById("messages-area");
 
-        function addMessage(text, sender, isToxic = false, score = 0) {
+        function agregarMensaje(html, tipo) {
             const div = document.createElement("div");
-            div.className = `message-bubble ${sender === "user" ? "message-user" : "message-bot"}`;
-            
-            if (sender === "bot" && score > 0) {
-                const porcentaje = (score * 100).toFixed(1);
-                div.innerHTML = `
-                    <div>${text}</div>
-                    <div class="${isToxic ? 'con-inapropiado' : 'sin-inapropiado'}" style="margin-top:5px; font-size: 0.85em;">
-                        ${isToxic ? `⚠ DETECTADO (${porcentaje}%)` : `✅ LIMPIO`}
-                    </div>`;
-            } else {
-                div.innerText = text;
-            }
+            div.className = `message-bubble ${tipo === 'user' ? 'message-user' : 'message-bot'}`;
+            div.innerHTML = html;
             messagesArea.appendChild(div);
             messagesArea.scrollTop = messagesArea.scrollHeight;
         }
 
-        // --- LÓGICA BLINDADA V5.1 ---
-        async function analisisProfundo(texto) {
-            const textoLimpio = limpiarTexto(texto);
-            const palabras = textoLimpio.split(/\s+/);
-            
-            let palabrasConocidas = 0; // Contador de seguridad
-
-            for (let palabra of palabras) {
-                // VERIFICACIÓN: ¿Conozco esta palabra o su raíz?
-                const esConocida = vocabulario[palabra];
-                const tieneRaizToxica = vocabulario[normalizarPalabra(palabra)];
-
-                // Si NO la conozco, la ignoro por completo (no sumo riesgo)
-                if (!esConocida && !tieneRaizToxica) {
-                    continue; 
-                }
-
-                // Si sí la conozco, analizamos si es mala
-                palabrasConocidas++; 
-                const palabraNormalizada = normalizarPalabra(palabra);
-                const tensor = textoATensor(palabraNormalizada);
-                const prediccion = model.predict(tensor);
-                const puntajePalabra = prediccion.dataSync()[0];
-
-                if (puntajePalabra > 0.85) {
-                    return puntajePalabra; // ¡Es una grosería confirmada!
-                }
-            }
-
-            // RED DE SEGURIDAD:
-            // Si la IA no encontró NINGUNA palabra que conozca (ej: "computadora gris"),
-            // entonces es imposible que sea un insulto de los que entrenamos.
-            // Retornamos 0 (Limpio) inmediatamente.
-            if (palabrasConocidas === 0) {
-                return 0;
-            }
-
-            // Si hay palabras conocidas pero ninguna era explosiva, analizamos la frase completa
-            const tensorFrase = textoATensor(textoLimpio);
-            const prediccionFrase = model.predict(tensorFrase);
-            return prediccionFrase.dataSync()[0];
-        }
-
         async function handleSend() {
-            const textoInput = document.getElementById("texto");
-            let text = textoInput.value;
-            if (!text) return;
+            const input = document.getElementById("texto");
+            const texto = input.value.trim();
+            if (!texto) return;
 
-            addMessage(text, "user");
-            textoInput.value = "";
+            // Mostrar mensaje usuario
+            agregarMensaje(texto, 'user');
+            input.value = "";
 
-            const valor = await analisisProfundo(text);
-            const esGrosero = valor > UMBRAL_DETECTAR;
+            // Analizar
+            const resultado = await analizarTexto(texto);
+            const esToxico = resultado.score > UMBRAL;
+            const porcentaje = (resultado.score * 100).toFixed(1);
+
+            let respuestaHTML = "";
             
-            let respuestaBot = esGrosero ? "Lenguaje inapropiado detectado." : "Mensaje seguro.";
-            addMessage(respuestaBot, "bot", esGrosero, valor);
+            if (esToxico) {
+                respuestaHTML = `
+                    Texto analizado.
+                    <span class="con-inapropiado">
+                        ⚠ LENGUAJE INAPROPIADO (${porcentaje}%)
+                    </span>
+                    <span style="font-size: 0.8em; color: #666;">
+                        Detectado por palabra: "<b>${resultado.culpable}</b>"
+                    </span>
+                `;
+            } else {
+                respuestaHTML = `
+                    Texto analizado.
+                    <span class="sin-inapropiado">
+                        ✅ MENSAJE SEGURO
+                    </span>
+                `;
+            }
+
+            agregarMensaje(respuestaHTML, 'bot');
         }
 
-        setTimeout(entrenarModelo, 500);
+        // Iniciar al cargar
+        iniciarIA();
 
     </script>
 </body>
